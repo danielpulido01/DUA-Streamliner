@@ -17,7 +17,7 @@ The core problem lies in the absence of an intelligent system capable of automat
 
 ### 1.1 Technology stack 
 
-- Application type: Web App
+- Application type: server side rendering Web App
 - Web Framework: ReactJS v19.2
 - NodeJS: v21
 - TypeScript v5.9.2
