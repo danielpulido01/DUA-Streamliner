@@ -9,7 +9,6 @@ This documentary diversity requires case-by-case interpretation, increasing the 
 The core problem lies in the absence of an intelligent system capable of automatically interpreting heterogeneous commercial documents, extracting relevant information, and reliably mapping it to the official DUA template defined by the Ministry of Finance.
 
 
-
 ## Authors
 
 - Daniel Pulido  
@@ -41,10 +40,7 @@ The core problem lies in the absence of an intelligent system capable of automat
 
 ## 1.2 UX UI analysis
 
-Incluye los atributos de usabilidad deseables del aplicativo, un diseño preliminar del UX a modo wireframes, y las evidencias de las pruebas de UX con usuarios reales que validan diseño diseño preliminar
-
 ### Core Business Process 
-Describir paso a paso lo que sucede en cada pantalla en términos de acciones (no hablamos de botones, ni listas ni de ningún componente visual, solo acciones de usuario y el resultado de cada acción)
 
 #### Login
 1. User enters username
@@ -113,24 +109,34 @@ Describir paso a paso lo que sucede en cada pantalla en términos de acciones (n
 Con esos pasos anteriores le pido a una AI que me genere los screens y los pego aquí con un título, descripción y la imágen empotrada
 
 #### Login Screen
-The user can log in into his account using the microsoft authentication screen
+The user can log in into his account using username, password and one-time token
 
-![alt text](/media/login.png)
+![Login Screen](/media/login.png)
 
 #### Home Screen
-![alt text](/media/home.png)
+Users can view a summary of uploaded files, recent activity, history, etc
+
+![User's Home Screen](/media/home.png)
 
 #### Configure Generation
-![alt text](/media/configure-generator.png)
+Users can configure the generation of the DUA with selected files and a DUA template
+
+![DUA Generation Configuration Screen](/media/configure-generator.png)
 
 #### Generation Progress
-![alt text](/media/progress.png)
+Shows the progress of the generation based on amount of files processed, current phase, etc
+
+![Progress Screen](/media/progress.png)
 
 #### Preview
-![alt text](/media/preview.png)
+Shows a preview of the generated DUA, users can validate and download the docx file
+
+![Document Preview Screen](/media/preview.png)
 
 #### Logout
-![alt text](/media/logout.png)
+Shows a message to the user verifying the session is closed
+
+![Logout Screen](/media/logout.png)
 
 
 ### UX Test Results
