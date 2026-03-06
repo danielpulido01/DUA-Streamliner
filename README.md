@@ -106,7 +106,6 @@ The core problem lies in the absence of an intelligent system capable of automat
 
 
 ### Wireframes
-Con esos pasos anteriores le pido a una AI que me genere los screens y los pego aquí con un título, descripción y la imágen empotrada
 
 #### Login Screen
 The user can log in into his account using username, password and one-time token
