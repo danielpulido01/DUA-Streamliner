@@ -40,7 +40,7 @@ The core problem lies in the absence of an intelligent system capable of automat
 
 ## 1.2 UX UI analysis
 
-### Core Business Process 
+### 1.2.1 Core Business Process 
 
 #### Login
 1. User enters username
@@ -105,7 +105,7 @@ The core problem lies in the absence of an intelligent system capable of automat
 5. System displays a session closed message
 
 
-### Wireframes
+### 1.2.2 Wireframes
 
 #### Login Screen
 The user can log in into his account using username, password and one-time token
@@ -138,7 +138,7 @@ Shows a message to the user verifying the session is closed
 ![Logout Screen](/media/logout.png)
 
 
-### UX Test Results (PENDIENTE)
+### 1.2.3 UX Test Results (PENDIENTE)
 - Escoger alguna app para ejecutar el UX Test usando esos wireframes
 - El test se lo van a aplicar en forma remota compartiendo un URL, a 3 estudiantes o amigos
 - Va a generar un reporte de resultados
@@ -155,10 +155,10 @@ Shows a message to the user verifying the session is closed
 
 Define la técnica y los principios de diseño de componentes del frontend, cómo se logra la reutilización de componentes, cómo se logra centralizar los estilos, el branding, la internacionalización y la responsividad.
 
-### Components
+### 1.3.1 Components
 The frontend will follow a layered component architecture to maximize reuse and maintain consistency across the application.
 
-### Component Hierarchy
+### 1.3.1 Component Hierarchy
 For this project we will have 4 layers:
 ```
 src/
@@ -169,10 +169,16 @@ src/
  │   └ features/
 ```
 
-### Component Categories
+### 1.3.2 Component Categories
 
 #### Primitive Components
 Reusable low-level UI components (no business logic)
+
+- Must be pure UI
+- No API calls
+- No business logic
+- Only accept props
+- Must support theme tokens
 
 ```
 Button
@@ -190,12 +196,7 @@ Table
 Toast
 ```
 
-- Must be pure UI
-- No API calls
-- No business logic
-- Only accept props
-- Must support theme tokens
-
+Example usage:
 ``` TypeScript
 <Button variant="primary" size="md" loading>
   Login
@@ -205,6 +206,11 @@ Toast
 #### Composite Components
 Built from primitives
 
+- Combine primitives
+- Handle UI logic
+- No API calls directly
+- Data passed via props
+
 ```
 LoginForm
 FileUploadArea
@@ -213,11 +219,6 @@ DocumentPreview
 FileStatusTable
 ActivityList
 ```
-
-- Combine primitives
-- Handle UI logic
-- No API calls directly
-- Data passed via props
 
 Example:
 ```
@@ -231,6 +232,9 @@ LoginForm
 #### Layout Components
 Components responsible for page structure and navigation.
 
+- Must not contain business logic
+- Responsible only for layout composition
+
 ```
 MainLayout
 AuthLayout
@@ -240,9 +244,7 @@ Topbar
 PageContainer
 ```
 
-- Must not contain business logic
-- Responsible only for layout composition
-
+Example:
 ```
 DashboardLayout
  ├ Sidebar
@@ -253,80 +255,29 @@ DashboardLayout
 #### Feature Components
 Feature-specific components tied to a business process.
 
-```
-features/
- ├ auth/
- │   ├ LoginPage.tsx
- │   └ LoginService.ts
- ├ dua-generator/
- │   ├ ConfigureGeneratorPage.tsx
- │   ├ ProgressPage.tsx
- │   └ PreviewPage.tsx
- ├ dashboard/
- │   └ HomePage.tsx
-```
-
 - Can call services
 - Manage state
 - Compose composites + layouts
 
-
-### Folder Structure
 ```
-src
- ├ components
- │   ├ primitives
- │   │   ├ Button
- │   │   ├ Input
- │   │   ├ Modal
- │   │   └ ProgressBar
- │   │
- │   ├ composites
- │   │   ├ LoginForm
- │   │   ├ FileUploadArea
- │   │   ├ FileStatusTable
- │   │   └ ActivityList
- │   │
- │   └ layouts
- │       ├ AuthLayout
- │       └ DashboardLayout
- │
- ├ features
- │   ├ auth
- │   ├ generator
- │   └ dashboard
- │
- ├ hooks
- │   ├ useAuth
- │   ├ useUpload
- │   └ useProgress
- │
- ├ services
- │   ├ apiClient.ts
- │   ├ authService.ts
- │   └ generatorService.ts
- │
- ├ i18n
- │   ├ en.json
- │   └ es.json
- │
- ├ styles
- │   ├ theme.ts
- │   ├ tokens.ts
- │   └ globals.css
- │
- └ utils
+features/
+ ├ auth/
+ │   └ LoginPage.tsx
+ ├ dua-generator/
+ │   ├ ConfigureGeneratorPage.tsx
+ │   ├ ProgressPage.tsx
+ │   └ PreviewPage.tsx
+ └ dashboard/
+     └ HomePage.tsx
 ```
 
-Developers must not create components outside this structure.
-
-### Component Reuse Strategy
+### 1.3.3 Component Reuse Strategy
 
 #### No Duplicated UI
 Before creating a new component developers must:
 1. Search in components/primitives
 2. Search in components/composites
-If similar component exists → extend it.
+If similar component exists → extend it. How can I extend it? Agregar
 
 #### Props Driven Design
 Components must be configurable using props instead of duplication.
@@ -339,6 +290,7 @@ Components must be configurable using props instead of duplication.
 
 #### Business logic outside components
 All API calls must go through:
+Como es que los llaman los componentes? los componentes llaman al hook y el hook al service o cómo es?
 ```
 services/
 ```
@@ -356,7 +308,7 @@ useUploadFiles()
 useGenerationProgress()
 ```
 
-### Styling and Branding Centralization
+### 1.3.4 Styling and Branding Centralization
 All visual styles must be centralized using design tokens.
 
 #### Tokens file
@@ -387,6 +339,7 @@ export const radius = {
 ```
 
 #### Theme configuration
+Cómo hago para cambiar dark/light theme? Cómo agrego nuevo theme?
 ```
 src/styles/theme.ts
 ```
@@ -419,8 +372,9 @@ Incorrect
 <Button style={{ background: "#0052CC" }} />
 ```
 
-### Internationalization Strategy
+### 1.3.5 Internationalization Strategy
 All text must be externalized.
+Como es que realmente esto funciona en el código? Cómo se cambia de idioma? Cómo agrego un nuevo idioma?
 
 #### Translation folder
 ```
@@ -463,7 +417,7 @@ Example:
 const { t } = useTranslation()
 ```
 
-### Responsiveness Strategy
+### 1.3.6 Responsiveness Strategy
 Responsiveness must be centralized using breakpoint tokens.
 
 #### Breakpoints
@@ -509,10 +463,11 @@ Responsive behavior:
 | Tablet | 2 column grid |
 | Desktop | 3 column grid |
 
-### Testing Requirements for Components
+### 1.3.7 Testing Requirements for Components
 Each component must include tests.
 
 #### Unit tests
+How exactly are these configured and tested?
 ```
 components/primitives/Button/Button.test.tsx
 ```
@@ -524,26 +479,24 @@ Test:
 - Events
 - Edge cases
 
-Example:
-```
-Button renders correctly
-Button shows loading state
-Button triggers click handler
-```
+Example tests:
+- Button renders correctly
+- Button shows loading state
+- Button triggers click handler
+
 
 #### Integration tests
 Using Playwright for flows:
 
 Required flows:
-```
-Login flow
-File upload
-Generation process
-Preview download
-Logout
-```
+- Login flow
+- File upload
+- Generation process
+- Preview download
+- Logout
 
 #### Performance Guidelines
+Agregar ejemplos de código de esto
 Developers must:
 - Use React.memo for heavy components
 - Use lazy() for feature modules
@@ -570,7 +523,52 @@ Diseño de classes con su respectiva ubicación en la estructura del proyecto, d
 
 ## 1.7 src folder
 
-un folder en /src que contiene el scaffold del proyecto, el cual se genera a partir de toda la especificación de los puntos del 1.1 al 1.6. 
+un folder en /src que contiene el scaffold del proyecto, el cual se genera a partir de toda la especificación de los puntos del 1.1 al 1.6.
+```
+src
+ ├ components
+ │   ├ primitives
+ │   │   ├ Button
+ │   │   ├ Input
+ │   │   ├ Modal
+ │   │   └ ProgressBar
+ │   │
+ │   ├ composites
+ │   │   ├ LoginForm
+ │   │   ├ FileUploadArea
+ │   │   ├ FileStatusTable
+ │   │   └ ActivityList
+ │   │
+ │   └ layouts
+ │       ├ AuthLayout
+ │       └ DashboardLayout
+ │
+ ├ features
+ │   ├ auth
+ │   ├ dua-generator
+ │   └ dashboard
+ │
+ ├ hooks
+ │   ├ useAuth
+ │   ├ useUpload
+ │   └ useProgress
+ │
+ ├ services
+ │   ├ apiClient.ts
+ │   ├ authService.ts
+ │   └ generatorService.ts
+ │
+ ├ i18n
+ │   ├ en.json
+ │   └ es.json
+ │
+ ├ styles
+ │   ├ theme.ts
+ │   ├ tokens.ts
+ │   └ globals.css
+ │
+ └ utils
+```
 
 # 2. Backend Design
 
