@@ -138,7 +138,7 @@ Shows a message to the user verifying the session is closed
 ![Logout Screen](/media/logout.png)
 
 
-### UX Test Results
+### UX Test Results (PENDIENTE)
 - Escoger alguna app para ejecutar el UX Test usando esos wireframes
 - El test se lo van a aplicar en forma remota compartiendo un URL, a 3 estudiantes o amigos
 - Va a generar un reporte de resultados
@@ -154,6 +154,407 @@ Shows a message to the user verifying the session is closed
 ## 1.3 Component design strategy
 
 Define la técnica y los principios de diseño de componentes del frontend, cómo se logra la reutilización de componentes, cómo se logra centralizar los estilos, el branding, la internacionalización y la responsividad.
+
+### Components
+The frontend will follow a layered component architecture to maximize reuse and maintain consistency across the application.
+
+### Component Hierarchy
+For this project we will have 4 layers:
+```
+src/
+ ├ components/
+ │   ├ primitives/
+ │   ├ composites/
+ │   ├ layouts/
+ │   └ features/
+```
+
+### Component Categories
+
+#### Primitive Components
+Reusable low-level UI components (no business logic)
+
+```
+Button
+Input
+PasswordInput
+Select
+Checkbox
+Radio
+Modal
+Card
+Badge
+Spinner
+ProgressBar
+Table
+Toast
+```
+
+- Must be pure UI
+- No API calls
+- No business logic
+- Only accept props
+- Must support theme tokens
+
+``` TypeScript
+<Button variant="primary" size="md" loading>
+  Login
+</Button>
+```
+
+#### Composite Components
+Built from primitives
+
+```
+LoginForm
+FileUploadArea
+ProgressTracker
+DocumentPreview
+FileStatusTable
+ActivityList
+```
+
+- Combine primitives
+- Handle UI logic
+- No API calls directly
+- Data passed via props
+
+Example:
+```
+LoginForm
+ ├ Input(username)
+ ├ PasswordInput
+ ├ TokenInput
+ └ Button(login)
+```
+
+#### Layout Components
+Components responsible for page structure and navigation.
+
+```
+MainLayout
+AuthLayout
+DashboardLayout
+Sidebar
+Topbar
+PageContainer
+```
+
+- Must not contain business logic
+- Responsible only for layout composition
+
+```
+DashboardLayout
+ ├ Sidebar
+ ├ Topbar
+ └ PageContent
+```
+
+#### Feature Components
+Feature-specific components tied to a business process.
+
+```
+features/
+ ├ auth/
+ │   ├ LoginPage.tsx
+ │   └ LoginService.ts
+ ├ dua-generator/
+ │   ├ ConfigureGeneratorPage.tsx
+ │   ├ ProgressPage.tsx
+ │   └ PreviewPage.tsx
+ ├ dashboard/
+ │   └ HomePage.tsx
+```
+
+- Can call services
+- Manage state
+- Compose composites + layouts
+
+
+### Folder Structure
+```
+src
+ ├ components
+ │   ├ primitives
+ │   │   ├ Button
+ │   │   ├ Input
+ │   │   ├ Modal
+ │   │   └ ProgressBar
+ │   │
+ │   ├ composites
+ │   │   ├ LoginForm
+ │   │   ├ FileUploadArea
+ │   │   ├ FileStatusTable
+ │   │   └ ActivityList
+ │   │
+ │   └ layouts
+ │       ├ AuthLayout
+ │       └ DashboardLayout
+ │
+ ├ features
+ │   ├ auth
+ │   ├ generator
+ │   └ dashboard
+ │
+ ├ hooks
+ │   ├ useAuth
+ │   ├ useUpload
+ │   └ useProgress
+ │
+ ├ services
+ │   ├ apiClient.ts
+ │   ├ authService.ts
+ │   └ generatorService.ts
+ │
+ ├ i18n
+ │   ├ en.json
+ │   └ es.json
+ │
+ ├ styles
+ │   ├ theme.ts
+ │   ├ tokens.ts
+ │   └ globals.css
+ │
+ └ utils
+```
+
+Developers must not create components outside this structure.
+
+### Component Reuse Strategy
+
+#### No Duplicated UI
+Before creating a new component developers must:
+1. Search in components/primitives
+2. Search in components/composites
+If similar component exists → extend it.
+
+#### Props Driven Design
+Components must be configurable using props instead of duplication.
+
+```
+<Button variant="primary" />
+<Button variant="secondary" />
+<Button variant="danger" />
+```
+
+#### Business logic outside components
+All API calls must go through:
+```
+services/
+```
+Example:
+```
+authService.ts
+generatorService.ts
+```
+
+Components use hooks.
+Example:
+```
+useLogin()
+useUploadFiles()
+useGenerationProgress()
+```
+
+### Styling and Branding Centralization
+All visual styles must be centralized using design tokens.
+
+#### Tokens file
+```
+src/styles/tokens.ts
+```
+
+Example:
+```
+export const colors = {
+  primary: "#0052CC",
+  secondary: "#36B37E",
+  danger: "#FF5630",
+  background: "#F4F5F7",
+}
+
+export const spacing = {
+  sm: "8px",
+  md: "16px",
+  lg: "24px",
+}
+
+export const radius = {
+  sm: "4px",
+  md: "8px",
+  lg: "12px"
+}
+```
+
+#### Theme configuration
+```
+src/styles/theme.ts
+```
+Example:
+
+export const theme = {
+  colors,
+  spacing,
+  radius,
+  typography: {
+    fontFamily: "Inter, sans-serif",
+    headingWeight: 600
+  }
+}
+
+#### Styling rules
+Developers must:
+- Use tokens
+- Avoid hardcoded colors
+- Avoid inline styles
+
+Example:
+
+Correct
+```TypeScript
+<Button style={{ background: theme.colors.primary }} />
+```
+Incorrect
+```TypeScript
+<Button style={{ background: "#0052CC" }} />
+```
+
+### Internationalization Strategy
+All text must be externalized.
+
+#### Translation folder
+```
+src/i18n
+ ├ en.json
+ └ es.json
+```
+
+Example:
+```JSON
+{
+  "login.title": "Login",
+  "login.username": "Username",
+  "login.password": "Password",
+  "login.token": "One-time token"
+}
+```
+
+#### Usage rule
+Components must not contain literal text.
+Example:
+
+Incorrect
+```TypeScript
+<h1>Login</h1>
+```
+
+Correct
+```TypeScript
+<h1>{t("login.title")}</h1>
+```
+#### Translation hook
+Developers must use:
+```
+react-i18next
+```
+
+Example:
+```TypeScript
+const { t } = useTranslation()
+```
+
+### Responsiveness Strategy
+Responsiveness must be centralized using breakpoint tokens.
+
+#### Breakpoints
+```
+styles/breakpoints.ts
+```
+
+Example:
+```TypeScript
+export const breakpoints = {
+  mobile: 480,
+  tablet: 768,
+  desktop: 1200
+}
+```
+
+#### Responsive rules
+Developers must:
+- Use flex/grid layouts
+- Avoid fixed widths
+- Use responsive utilities
+
+Example:
+```
+grid-template-columns:
+1 column mobile
+2 columns tablet
+3 columns desktop
+```
+
+#### Layout example
+```
+Home Page
+ ├ Summary cards
+ ├ Uploaded files table
+ └ Activity log
+```
+
+Responsive behavior:
+| Device | Layout |
+|--------|--------|
+| Mobile | Vertical stack |
+| Tablet | 2 column grid |
+| Desktop | 3 column grid |
+
+### Testing Requirements for Components
+Each component must include tests.
+
+#### Unit tests
+```
+components/primitives/Button/Button.test.tsx
+```
+
+Testing rules:
+Test:
+- Rendering
+- Props
+- Events
+- Edge cases
+
+Example:
+```
+Button renders correctly
+Button shows loading state
+Button triggers click handler
+```
+
+#### Integration tests
+Using Playwright for flows:
+
+Required flows:
+```
+Login flow
+File upload
+Generation process
+Preview download
+Logout
+```
+
+#### Performance Guidelines
+Developers must:
+- Use React.memo for heavy components
+- Use lazy() for feature modules
+- Avoid unnecessary re-renders
+
+Example:
+```
+lazy load:
+generator module
+preview module
+```
 
 ## 1.4 Security
 
