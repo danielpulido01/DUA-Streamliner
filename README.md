@@ -484,7 +484,6 @@ Example tests:
 - Button shows loading state
 - Button triggers click handler
 
-
 #### Integration tests
 Using Playwright for flows:
 
@@ -510,8 +509,145 @@ preview module
 ```
 
 ## 1.4 Security
-
 Tecnologías, técnicas y classes con su respectiva ubicación en la estructura del proyecto responsables de la autenticación y la autorización de permisos y sesiones. 
+
+### 1.4.1 Technologies
+React Router
+Context API
+Zod
+Axios or Fetch wrapper
+HTTP-only secure cookies preferred for session handling
+
+### 1.4.2 Techniques
+
+#### Authentication
+1. User submits username, password, and one-time token.
+2. Frontend validates the form using Zod.
+  ```TypeScript
+  import { z } from "zod";
+
+  export const loginRequestSchema = z.object({
+    username: z.string().min(1),
+    password: z.string().min(1),
+    oneTimeToken: z.string().min(1),
+  });
+  
+  export type LoginRequest = z.infer<typeof loginRequestSchema>;
+  ```
+3. Frontend sends credentials to backend via authService.login.
+  ```TypeScript
+  import { apiClient } from "@/services/apiClient";
+  import type { LoginRequest } from "../schemas/loginRequest.schema";
+  import type { AuthSession } from "@/security/session/session.types";
+
+  export class AuthService {
+    async login(payload: LoginRequest): Promise<AuthSession> {
+      return apiClient.post("/auth/login", payload);
+    }
+
+    async logout(): Promise<void> {
+      await apiClient.post("/auth/logout");
+    }
+
+    async getCurrentSession(): Promise<AuthSession> {
+      return apiClient.get("/auth/me");
+    }
+  }
+
+  export const authService = new AuthService();
+  ```
+4. Backend validates the credentials.
+5. Backend creates the session.
+6. Backend returns:
+   - Secure session cookie
+   - Authenticated user profile
+   - Permission set or role set
+  ```TypeScript
+  import { useState } from "react";
+  import { authService } from "../services/authService";
+  import { loginRequestSchema, type LoginRequest } from "../schemas/loginRequest.schema";
+  import { useSession } from "@/security/hooks/useSession";
+
+  export function useLogin() {
+    const { setSession } = useSession();
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    async function login(input: LoginRequest) {
+      setError(null);
+      setIsLoading(true);
+
+      const parsed = loginRequestSchema.safeParse(input);
+      if (!parsed.success) {
+        setIsLoading(false);
+        setError("Invalid login data");
+        return false;
+      }
+
+      try {
+        const session = await authService.login(parsed.data);
+        setSession(session);
+        return true;
+      } catch {
+        setError("Invalid credentials");
+        return false;
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    return { login, isLoading, error };
+  }
+  ```
+7. Frontend stores user and permission metadata in memory through SessionProvider.
+   Pendiente definir bien esta parte de la session, ya hay archivos con teoría de lo que debería decir, ajustar a ejemplos concretos de código
+8. Frontend redirects to the Home screen.
+
+#### Authorization
+Developers must never write:
+```TypeScript
+if (user.role === "admin")
+```
+Expandir en cómo funciona el permission hook
+directly inside pages or components. Instead they should use:
+```TypeScript
+const { hasPermission } = usePermissions();
+
+{hasPermission("dua.generate") && <StartGenerationButton />}
+```
+
+To add additional roles/permissions:
+1. Add role definition in [roles.ts](/src/policies/roles.ts)
+  ```TypeScript
+  export const Roles = {
+    ADMIN: "admin",
+    OPERATOR: "operator",
+    REVIEWER: "reviewer",
+  } as const;
+  ```
+2. Add permission definition in [permissions.ts](/src/policies/permissions.ts)
+  ```TypeScript
+  export const Permissions = {
+    DUA_READ: "dua.read",
+    DUA_GENERATE: "dua.generate",
+    DUA_DOWNLOAD: "dua.download",
+    FILES_READ: "files.read",
+    FILES_UPLOAD: "files.upload",
+    ACTIVITY_READ: "activity.read",
+  } as const;
+  ```
+3. Map roles to permissions in [accessPolicy.ts](/src/policies/accessPolicy.ts)
+  ```TypeScript
+  import { Permissions } from "./permissions";
+
+  export const accessPolicy = {
+    canViewHome: [Permissions.FILES_READ, Permissions.ACTIVITY_READ],
+    canGenerateDua: [Permissions.DUA_GENERATE, Permissions.FILES_UPLOAD],
+    canDownloadDua: [Permissions.DUA_DOWNLOAD],
+  };
+  ```
+
+#### Routing Protection
 
 ## 1.5 Layered design
 
