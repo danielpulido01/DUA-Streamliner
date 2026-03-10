@@ -651,7 +651,474 @@ To add additional roles/permissions:
 
 ## 1.5 Layered design
 
-Diseño y explicación de las diversas capas de la aplicación en el frontend. 
+The frontend follows a five-layer architecture where each layer has a clear responsibility and well-defined dependency rules. This design ensures separation of concerns, testability, and consistency with the component hierarchy, security model, and project structure already defined.
+
+### 1.5.1 Layer Overview
+
+```
+┌─────────────────────────────────────────────────┐
+│           1. Presentation Layer                  │
+│     (components/, features/, layouts, pages)     │
+├─────────────────────────────────────────────────┤
+│           2. Application Layer                   │
+│         (hooks/, feature-level hooks)            │
+├─────────────────────────────────────────────────┤
+│  3. Domain-Oriented Frontend Logic Layer         │
+│    (schemas/, policies/, domain rules)           │
+├─────────────────────────────────────────────────┤
+│       4. Service / Integration Layer             │
+│          (services/, apiClient)                  │
+├─────────────────────────────────────────────────┤
+│   5. Cross-cutting Infrastructure Layer          │
+│  (security/, styles/, i18n/, utils/, providers/) │
+└─────────────────────────────────────────────────┘
+```
+
+### 1.5.2 Layer Responsibilities
+
+#### Layer 1 — Presentation Layer
+
+**Responsibility:** Render UI, capture user input, and display application state.
+
+**Mapped folders:**
+```
+src/components/primitives/    → Button, Input, Modal, ProgressBar
+src/components/composites/    → LoginForm, FileUploadArea, FileStatusTable
+src/components/layouts/       → AuthLayout, DashboardLayout
+src/features/auth/            → LoginPage.tsx
+src/features/dashboard/       → HomePage.tsx
+src/features/dua-generator/   → ConfigureGeneratorPage.tsx, ProgressPage.tsx, PreviewPage.tsx
+```
+
+**Rules:**
+- Primitives contain zero business logic; they only accept props and use theme tokens.
+- Composites combine primitives and delegate logic to hooks via props or direct hook calls.
+- Feature pages compose layouts + composites and connect to the Application Layer through hooks.
+- All visible text must use the `t()` function from `react-i18next`.
+
+```TypeScript
+// Feature page delegates to hooks — no direct API calls
+export function LoginPage() {
+  const { t } = useTranslation();
+  const { login, isLoading, error } = useLogin();
+
+  return (
+    <AuthLayout>
+      <h1>{t("login.title")}</h1>
+      <LoginForm onSubmit={login} isLoading={isLoading} error={error} />
+    </AuthLayout>
+  );
+}
+```
+
+---
+
+#### Layer 2 — Application Layer
+
+**Responsibility:** Orchestrate user flows, manage state transitions, coordinate validation, service calls, and session updates.
+
+**Mapped folders:**
+```
+src/hooks/                    → useSession, usePermissions (shared hooks)
+src/features/auth/hooks/      → useLogin
+src/features/dua-generator/hooks/ → useUploadFiles, useGenerationProgress, usePreview
+src/features/dashboard/hooks/ → useDashboardData
+```
+
+**Rules:**
+- Hooks are the only bridge between the Presentation Layer and lower layers.
+- Each hook calls domain validation (Layer 3) before calling a service (Layer 4).
+- Hooks manage loading, error, and success states.
+- Hooks must not contain inline fetch/axios calls — they must go through services.
+
+```TypeScript
+// Application hook orchestrating: validation → service → session update
+export function useLogin() {
+  const { setSession } = useSession();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function login(input: LoginRequest) {
+    setError(null);
+    setIsLoading(true);
+
+    // Layer 3: Domain validation
+    const parsed = loginRequestSchema.safeParse(input);
+    if (!parsed.success) {
+      setIsLoading(false);
+      setError("Invalid login data");
+      return false;
+    }
+
+    try {
+      // Layer 4: Service call
+      const session = await authService.login(parsed.data);
+      // Layer 5: Session management
+      setSession(session);
+      return true;
+    } catch {
+      setError("Invalid credentials");
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  return { login, isLoading, error };
+}
+```
+
+---
+
+#### Layer 3 — Domain-Oriented Frontend Logic Layer
+
+**Responsibility:** Enforce data integrity, permission rules, and domain-specific UI logic before interacting with the backend.
+
+**Mapped folders:**
+```
+src/schemas/                      → loginRequest.schema.ts
+src/features/dua-generator/schemas/ → uploadConfig.schema.ts, templateValidation.schema.ts
+src/policies/roles.ts             → Role definitions
+src/policies/permissions.ts       → Permission constants
+src/policies/accessPolicy.ts      → Role-to-permission mapping
+```
+
+**Rules:**
+- All user input must be validated with Zod schemas before being sent to a service.
+- Permission checks must use the `usePermissions` hook — never direct role string comparisons.
+- Domain schemas live alongside the feature they belong to or in `src/schemas/` when shared.
+
+```TypeScript
+// Zod schema for DUA generation configuration
+import { z } from "zod";
+
+export const uploadConfigSchema = z.object({
+  files: z.array(z.instanceof(File)).min(1, "At least one document is required"),
+  templateFile: z.instanceof(File),
+  generateDate: z.string().datetime(),
+});
+
+export type UploadConfig = z.infer<typeof uploadConfigSchema>;
+```
+
+```TypeScript
+// Permission check in a feature component
+const { hasPermission } = usePermissions();
+
+{hasPermission("dua.generate") && (
+  <Button onClick={startGeneration}>{t("generator.start")}</Button>
+)}
+```
+
+---
+
+#### Layer 4 — Service / Integration Layer
+
+**Responsibility:** Encapsulate all HTTP communication with the backend. Provide a single point of configuration for headers, base URL, error handling, and response transformation.
+
+**Mapped folders:**
+```
+src/services/apiClient.ts         → Centralized HTTP client (fetch/axios wrapper)
+src/services/authService.ts       → Authentication endpoints
+src/services/generatorService.ts  → DUA generation endpoints
+src/services/fileService.ts       → File upload and retrieval endpoints
+```
+
+**Rules:**
+- All backend communication must go through `apiClient`.
+- Services return typed responses — never raw HTTP responses to upper layers.
+- Services must not manage UI state (no `useState`, no `setLoading`).
+- Error propagation is done via thrown exceptions; hooks (Layer 2) catch and interpret them.
+
+```TypeScript
+// Centralized API client
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+export const apiClient = {
+  async post<T>(path: string, body?: unknown): Promise<T> {
+    const response = await fetch(`${API_BASE_URL}${path}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    if (!response.ok) throw new Error(`API error: ${response.status}`);
+    return response.json();
+  },
+
+  async get<T>(path: string): Promise<T> {
+    const response = await fetch(`${API_BASE_URL}${path}`, {
+      method: "GET",
+      credentials: "include",
+    });
+    if (!response.ok) throw new Error(`API error: ${response.status}`);
+    return response.json();
+  },
+};
+```
+
+```TypeScript
+// Generator service — typed, stateless
+import { apiClient } from "./apiClient";
+
+export interface GenerationResult {
+  id: string;
+  status: "completed" | "failed";
+  previewUrl: string;
+  downloadUrl: string;
+}
+
+export class GeneratorService {
+  async startGeneration(configId: string): Promise<{ jobId: string }> {
+    return apiClient.post("/generator/start", { configId });
+  }
+
+  async getProgress(jobId: string): Promise<{ percentage: number; stage: string }> {
+    return apiClient.get(`/generator/progress/${jobId}`);
+  }
+
+  async getResult(jobId: string): Promise<GenerationResult> {
+    return apiClient.get(`/generator/result/${jobId}`);
+  }
+}
+
+export const generatorService = new GeneratorService();
+```
+
+---
+
+#### Layer 5 — Cross-cutting Infrastructure Layer
+
+**Responsibility:** Provide shared capabilities used by all layers — session management, permission resolution, styling tokens, internationalization, observability, and generic utilities.
+
+**Mapped folders:**
+```
+src/providers/SessionProvider.tsx  → Session context provider
+src/types/session.types.ts        → Session type definitions
+src/hooks/useSession.ts           → Session access hook
+src/hooks/usePermissions.ts       → Permission resolution hook
+src/styles/tokens.ts              → Color, spacing, radius tokens
+src/styles/theme.ts               → Theme composition
+src/styles/breakpoints.ts         → Responsive breakpoints
+src/styles/globals.css            → Global styles
+src/i18n/en.json                  → English translations
+src/i18n/es.json                  → Spanish translations
+src/i18n/config.ts                → react-i18next configuration
+src/utils/                        → Shared helpers (formatters, constants)
+src/observability/                → Azure Application Insights initialization
+```
+
+**Rules:**
+- Infrastructure code must be domain-agnostic.
+- Session state is provided through React Context (`SessionProvider`) and consumed via `useSession`.
+- Observability is initialized at application bootstrap and available globally.
+- Style tokens are the single source of truth — no hardcoded values in components.
+
+```TypeScript
+// Session provider — wraps the app
+import { createContext, useContext, useState, type ReactNode } from "react";
+import type { AuthSession } from "../types/session.types";
+
+interface SessionContextValue {
+  session: AuthSession | null;
+  setSession: (session: AuthSession) => void;
+  clearSession: () => void;
+}
+
+const SessionContext = createContext<SessionContextValue | null>(null);
+
+export function SessionProvider({ children }: { children: ReactNode }) {
+  const [session, setSessionState] = useState<AuthSession | null>(null);
+
+  function setSession(session: AuthSession) {
+    setSessionState(session);
+  }
+
+  function clearSession() {
+    setSessionState(null);
+  }
+
+  return (
+    <SessionContext.Provider value={{ session, setSession, clearSession }}>
+      {children}
+    </SessionContext.Provider>
+  );
+}
+
+export function useSessionContext() {
+  const ctx = useContext(SessionContext);
+  if (!ctx) throw new Error("useSessionContext must be used within SessionProvider");
+  return ctx;
+}
+```
+
+---
+
+### 1.5.3 Dependency Rules
+
+Each layer may only depend on the layer immediately below it or on the cross-cutting infrastructure layer. No layer may depend on a layer above it.
+
+```
+Presentation  →  Application  →  Domain Logic  →  Services
+     ↓               ↓               ↓               ↓
+     └───────────────────── Infrastructure ──────────────┘
+```
+
+| Source Layer | Can depend on |
+|---|---|
+| Presentation | Application, Infrastructure |
+| Application | Domain Logic, Services, Infrastructure |
+| Domain Logic | Infrastructure only |
+| Services | Infrastructure only |
+| Infrastructure | No application layer dependencies |
+
+**Violations to avoid:**
+- A primitive component importing a service (not allowed)
+- A service calling `useState` or managing UI state (not allowed)
+- A feature page calling `fetch` or `apiClient` directly (not allowed)
+- A hook comparing `user.role === "admin"` instead of using `usePermissions` (not allowed)
+
+---
+
+### 1.5.4 Layer Mapping to `src/` Folder Structure
+
+```
+src/
+ ├ components/           → Layer 1: Presentation (primitives, composites, layouts)
+ ├ features/             → Layer 1 + 2 + 3: Pages, feature hooks, feature schemas
+ │   ├ auth/
+ │   │   ├ LoginPage.tsx              → Layer 1
+ │   │   ├ hooks/useLogin.ts          → Layer 2
+ │   │   └ schemas/loginRequest.schema.ts → Layer 3
+ │   ├ dua-generator/
+ │   │   ├ ConfigureGeneratorPage.tsx  → Layer 1
+ │   │   ├ ProgressPage.tsx           → Layer 1
+ │   │   ├ PreviewPage.tsx            → Layer 1
+ │   │   ├ hooks/                     → Layer 2
+ │   │   └ schemas/                   → Layer 3
+ │   └ dashboard/
+ │       ├ HomePage.tsx               → Layer 1
+ │       └ hooks/                     → Layer 2
+ │
+ ├ hooks/                → Layer 2 + 5: Shared hooks (useSession, usePermissions)
+ ├ schemas/              → Layer 3: Shared validation schemas
+ ├ services/             → Layer 4: Shared services and apiClient
+ ├ policies/             → Layer 3: Roles, permissions, access policies
+ ├ providers/            → Layer 5: SessionProvider, context providers
+ ├ types/                → Layer 5: Shared type definitions
+ ├ i18n/                 → Layer 5: Translations and config
+ ├ styles/               → Layer 5: Tokens, theme, breakpoints, globals
+ ├ observability/        → Layer 5: Azure Application Insights setup
+ └ utils/                → Layer 5: Shared utilities
+```
+
+---
+
+### 1.5.5 Example Flow: Login
+
+Shows how a login request traverses all five layers:
+
+```
+User clicks Login
+       │
+       ▼
+┌─ Layer 1: Presentation ─────────────────────────┐
+│  LoginPage → LoginForm captures input            │
+│  Calls login(input) from useLogin hook           │
+└──────────────────────────────────────────────────┘
+       │
+       ▼
+┌─ Layer 2: Application ──────────────────────────┐
+│  useLogin hook receives input                    │
+│  Calls loginRequestSchema.safeParse(input)       │
+└──────────────────────────────────────────────────┘
+       │
+       ▼
+┌─ Layer 3: Domain Logic ─────────────────────────┐
+│  Zod schema validates username, password, token  │
+│  Returns parsed data or validation error         │
+└──────────────────────────────────────────────────┘
+       │
+       ▼
+┌─ Layer 2: Application (continues) ──────────────┐
+│  useLogin calls authService.login(parsedData)    │
+└──────────────────────────────────────────────────┘
+       │
+       ▼
+┌─ Layer 4: Service ──────────────────────────────┐
+│  authService sends POST /auth/login via          │
+│  apiClient with credentials: "include"           │
+│  Returns AuthSession                             │
+└──────────────────────────────────────────────────┘
+       │
+       ▼
+┌─ Layer 5: Infrastructure ───────────────────────┐
+│  useLogin calls setSession(session)              │
+│  SessionProvider stores user + permissions        │
+│  Router redirects to Home                        │
+└──────────────────────────────────────────────────┘
+```
+
+---
+
+### 1.5.6 Example Flow: DUA Generation
+
+Shows how the DUA generation process traverses all five layers:
+
+```
+User uploads files and template, clicks "Start Generation"
+       │
+       ▼
+┌─ Layer 1: Presentation ─────────────────────────┐
+│  ConfigureGeneratorPage → FileUploadArea         │
+│  Captures files + template                       │
+│  Calls startGeneration(config) from hook         │
+└──────────────────────────────────────────────────┘
+       │
+       ▼
+┌─ Layer 5: Infrastructure ───────────────────────┐
+│  usePermissions checks hasPermission             │
+│  ("dua.generate") before allowing action         │
+└──────────────────────────────────────────────────┘
+       │
+       ▼
+┌─ Layer 2: Application ──────────────────────────┐
+│  useUploadFiles hook receives config             │
+│  Calls uploadConfigSchema.safeParse(config)      │
+└──────────────────────────────────────────────────┘
+       │
+       ▼
+┌─ Layer 3: Domain Logic ─────────────────────────┐
+│  Zod schema validates: files.length >= 1,        │
+│  template exists, date is valid                  │
+└──────────────────────────────────────────────────┘
+       │
+       ▼
+┌─ Layer 4: Service ──────────────────────────────┐
+│  generatorService.startGeneration(configId)      │
+│  Returns { jobId }                               │
+└──────────────────────────────────────────────────┘
+       │
+       ▼
+┌─ Layer 1: Presentation ─────────────────────────┐
+│  Router navigates to ProgressPage                │
+│  useGenerationProgress polls for updates         │
+│  ProgressBar + file status table update in       │
+│  real time                                       │
+└──────────────────────────────────────────────────┘
+       │
+       ▼
+┌─ Layer 4: Service ──────────────────────────────┐
+│  generatorService.getResult(jobId)               │
+│  Returns preview URL and download URL            │
+└──────────────────────────────────────────────────┘
+       │
+       ▼
+┌─ Layer 1: Presentation ─────────────────────────┐
+│  PreviewPage renders DocumentPreview composite   │
+│  User reviews, confirms, and downloads .docx     │
+└──────────────────────────────────────────────────┘
+```
 
 ## 1.6  Design patterns
 
