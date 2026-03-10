@@ -512,15 +512,13 @@ preview module
 Tecnologías, técnicas y classes con su respectiva ubicación en la estructura del proyecto responsables de la autenticación y la autorización de permisos y sesiones. 
 
 ### 1.4.1 Technologies
-React Router
-Context API
-Zod
-Axios or Fetch wrapper
-HTTP-only secure cookies preferred for session handling
+- React Router
+- Context API
+- Zod
+- Axios or Fetch wrapper
+- HTTP-only secure cookies preferred for session handling
 
-### 1.4.2 Techniques
-
-#### Authentication
+### 1.4.2 Authentication
 1. User submits username, password, and one-time token.
 2. Frontend validates the form using Zod.
   ```TypeScript
@@ -603,12 +601,12 @@ HTTP-only secure cookies preferred for session handling
    Pendiente definir bien esta parte de la session, ya hay archivos con teoría de lo que debería decir, ajustar a ejemplos concretos de código
 8. Frontend redirects to the Home screen.
 
-#### Authorization
+### 1.4.3 Authorization
+Expandir en cómo funciona el permission hook\
 Developers must never write:
 ```TypeScript
 if (user.role === "admin")
 ```
-Expandir en cómo funciona el permission hook
 directly inside pages or components. Instead they should use:
 ```TypeScript
 const { hasPermission } = usePermissions();
@@ -616,7 +614,7 @@ const { hasPermission } = usePermissions();
 {hasPermission("dua.generate") && <StartGenerationButton />}
 ```
 
-To add additional roles/permissions:
+**To add additional roles/permissions:**
 1. Add role definition in [roles.ts](/src/policies/roles.ts)
   ```TypeScript
   export const Roles = {
@@ -636,7 +634,18 @@ To add additional roles/permissions:
     ACTIVITY_READ: "activity.read",
   } as const;
   ```
-3. Map roles to permissions in [accessPolicy.ts](/src/policies/accessPolicy.ts)
+  and in [session.types.ts](/src/types/session.types.ts)
+  ```TypeScript
+  export type PermissionCode =
+  | "dua.read"
+  | "dua.generate"
+  | "dua.download"
+  | "files.read"
+  | "files.upload"
+  | "activity.read";
+  ```
+
+3. Map policies to permissions in [accessPolicy.ts](/src/policies/accessPolicy.ts)
   ```TypeScript
   import { Permissions } from "./permissions";
 
@@ -647,8 +656,168 @@ To add additional roles/permissions:
   };
   ```
 
-#### Routing Protection
+Permissions should be added in the backend as well in order for this to work
 
+### 1.4.4 Routing Protection
+This project has three methods of routing protection, use depending on each routes context
+
+#### 1.4.4.1 Auth Guard
+Use this guard to prevent unathenticated access
+
+Example usage:
+[AppRouter.tsx](/src/routes/AppRouter.tsx)
+```TypeScript
+  <AuthGuard>
+    <DashboardLayout>
+      <HomePage />
+    </DashboardLayout>
+  </AuthGuard>
+```
+
+#### 1.4.4.1 Guest Guard
+Use this guard to prevent authenticated users accessing unauthenticated sites
+
+Example usage:
+[AppRouter.tsx](/src/routes/AppRouter.tsx)
+```TypeScript
+  <GuestGuard>
+    <LoginPage />
+  </GuestGuard>
+```
+
+#### 1.4.4.1 Permission Guard
+Use this guard when an action requires an access policy to prevent unauthorized accesss
+
+Example usage:
+[AppRouter.tsx](/src/routes/AppRouter.tsx)
+  ```TypeScript
+  <AuthGuard>
+    <PermissionGuard required={accessPolicy.canGenerateDua}>
+      <ConfigureGeneratorPage />
+    </PermissionGuard>
+  </AuthGuard>
+  ```
+
+### 1.4.5 API Communication
+
+#### Centralized API Client
+[apiClient.ts](/src/services/apiClient.ts)
+
+#### HTTP Interceptors
+[httpInterceptors.ts](/src/services/httpInterceptors.ts)
+
+### 1.4.6 Storage Rules
+Agregar ejemplos y cómo es que nos aseguramos de no guardar passwords, tokens, etc
+**Allowed storage**
+- UI preferences
+- selected language
+- theme
+- non-sensitive temporary UI state
+
+**Forbidden storage**
+- access tokens
+- refresh tokens
+- passwords
+- one-time tokens
+- raw permission payloads if sensitive
+
+**Preferred storage model:**
+- backend session stored in secure, HTTP-only, same-site cookies
+- frontend session state kept in memory through SessionProvider
+
+### 1.4.7 Logout
+Responsibilities:
+- call backend logout endpoint
+- clear session provider state
+- clear sensitive in-memory data
+- redirect to login
+
+[useLogout.ts](/src/hooks/useLogout.ts)
+
+### 1.4.8 Session Expiration
+Como es que pasa todo esto
+When backend returns 401 Unauthorized:
+- interceptor must detect it
+- sessionManager clears session state
+- user is redirected to login
+- user sees a session expired message
+
+### 1.4.9 Screen-Level Security Mapping
+Cambiar lo de responsible elements y rules por ejemplos reales de como aseguramos cada cosa en codigo
+#### Login screen
+
+Responsible elements:
+```
+src/features/auth/pages/LoginPage.tsx
+src/features/auth/components/LoginForm.tsx
+src/features/auth/hooks/useLogin.ts
+src/features/auth/services/authService.ts
+src/features/auth/schemas/loginRequest.schema.ts
+src/security/guards/GuestGuard.tsx
+```
+
+#### Home screen
+
+Responsible elements:
+```
+src/security/guards/AuthGuard.tsx
+src/security/hooks/useSession.ts
+src/security/hooks/usePermissions.ts
+```
+Rules:
+- requires authenticated session
+- must not render data until session is validated
+
+#### Configure Generator screen
+
+Responsible elements:
+```
+src/security/guards/AuthGuard.tsx
+src/security/guards/PermissionGuard.tsx
+src/security/policies/accessPolicy.ts
+```
+```TypeScript
+<PermissionGuard required={accessPolicy.canGenerateDua}>
+  <ConfigureGeneratorPage />
+</PermissionGuard>
+```
+
+Rules:
+- requires authenticated session
+- requires dua.generate and files.upload
+
+#### Progress screen
+
+Responsible elements:
+```
+src/security/guards/AuthGuard.tsx
+src/security/guards/PermissionGuard.tsx
+```
+Rules:
+- requires authenticated session
+- requires permission to read generation progress
+
+#### Preview screen
+
+Responsible elements:
+```
+src/security/guards/AuthGuard.tsx
+src/security/guards/PermissionGuard.tsx
+```
+Rules:
+- requires authenticated session
+- requires dua.read
+- download action requires dua.download
+
+#### Logout flow
+
+Responsible elements:
+```
+src/features/auth/components/LogoutButton.tsx
+src/features/auth/hooks/useLogout.ts
+src/features/auth/services/authService.ts
+src/security/providers/SessionProvider.tsx 
+```
 ## 1.5 Layered design
 
 Diseño y explicación de las diversas capas de la aplicación en el frontend. 
