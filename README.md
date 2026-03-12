@@ -311,10 +311,11 @@ useGenerationProgress()
 ### 1.3.4 Styling and Branding Centralization
 All visual styles must be centralized using design tokens.
 
-#### Tokens file
-```
-src/styles/tokens.ts
-```
+#### 1.3.4.1 Globals file
+The [globals.css](/src/styles/globals.css) file is where the active theme gets applied. Add/modify this file when needing to add/change global/utility selectors (one time use).
+
+#### 1.3.4.2 Tokens file
+The [tokens.ts](/src/styles/tokens.ts) file contains the tokens used in other ts files. Add reusable tokens in this file for use in components.
 
 Example:
 ```
@@ -338,59 +339,103 @@ export const radius = {
 }
 ```
 
-#### Theme configuration
-Cómo hago para cambiar dark/light theme? Cómo agrego nuevo theme?
-```
-src/styles/theme.ts
-```
+#### 1.3.4.3 Theme configuration
+1. App root should always be wrapped with `ThemeProvider`.
+2. Render `ThemeSwitcher` component in a shared layout (e.g. topbar). This will allow users to switch themes
+3. Style components with CSS variables (`var(--color-primary)`) instead of hardcoded values.
+
 Example:
 
-export const theme = {
-  colors,
+```tsx
+import { ThemeProvider } from "../providers/ThemeProvider";
+import { ThemeSwitcher } from "../components/primitives/themeSwitcher";
+
+export function App() {
+  return (
+    <ThemeProvider>
+      <ThemeSwitcher />
+      {/* routes/components */}
+    </ThemeProvider>
+  );
+}
+```
+
+#### 1.3.4.4 Adding a theme
+1. Open [theme.ts](/src/styles/theme.ts).
+2. Add a new key under `themes` with the same `Theme` shape.
+3. The new theme appears automatically in `ThemeSwitcher`.
+
+Example:
+```ts
+custom: {
+  colors: { ...colors, primary: "#0F766E", background: "#ECFEFF" },
   spacing,
   radius,
-  typography: {
-    fontFamily: "Inter, sans-serif",
-    headingWeight: 600
-  }
+  typography: { fontFamily: "Inter, sans-serif", headingWeight: 600 },
 }
-
-#### Styling rules
-Developers must:
-- Use tokens
-- Avoid hardcoded colors
-- Avoid inline styles
-
-Example:
-
-Correct
-```TypeScript
-<Button style={{ background: theme.colors.primary }} />
 ```
-Incorrect
-```TypeScript
-<Button style={{ background: "#0052CC" }} />
+
+#### 1.3.4.5 How to use
+1. Create css file for the component, setting values based on the css global variables. Do not use hardcoded colors/spacing.
+```css
+.btn {
+  background: var(--color-primary);
+  color: var(--color-text);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+}
 ```
+2. Create the component.
+```tsx
+// src/components/primitives/button.tsx
+import "./button.css";
+
+export function Button({ children }: { children: React.ReactNode }) {
+  return <button className="btn">{children}</button>;
+}
+```
+3. Theme provider will change the values of the css variables when changing themes.
 
 ### 1.3.5 Internationalization Strategy
-All text must be externalized.
-Como es que realmente esto funciona en el código? Cómo se cambia de idioma? Cómo agrego un nuevo idioma?
+All text must be externalized. The languageSwitcher primitive is the component that allows users to switch languages, add this component on a header layout.
 
 #### Translation folder
-```
-src/i18n
- ├ en.json
- └ es.json
-```
+The [i18n](/src/i18n) folder contains a file for each language code used in the application. To add a new language simply create another json file named as the language code in the [i18n](/src/i18n) and add the translations for each text.\
 
-Example:
+#### How to add new language
+1. Create the [es.json](/src/i18n/es.json) file in the [i18n](/src/i18n) folder and add each text with its translation.
 ```JSON
 {
   "login.title": "Login",
-  "login.username": "Username",
-  "login.password": "Password",
-  "login.token": "One-time token"
+  "login.username": "Nombre de usuario",
+  "login.password": "Contraseña",
+  "login.token": "Token de un solo uso"
 }
+```
+
+2. Add import and language definition in [config.ts](/src/i18n/config.ts)
+```TypeScript
+import en from "./en.json";
+import es from "./es.json";
+//import new languagges
+
+export const SUPPORTED_LANGUAGES = ["en", "es"] as const; // add other languages
+export type LanguageCode = (typeof SUPPORTED_LANGUAGES)[number];
+
+const resources = {
+  en: { translation: en },
+  es: { translation: es },
+  //add new language to this const
+};
+```
+
+3. Add label for the new language in [languageSwitcher.tsx](/src/components/primitives/languageSwitcher.tsx)
+```TypeScript
+const labels: Record<string, string> = {
+  en: "English",
+  es: "Español",
+  //Add new language
+};
 ```
 
 #### Usage rule
@@ -404,64 +449,76 @@ Incorrect
 
 Correct
 ```TypeScript
-<h1>{t("login.title")}</h1>
-```
-#### Translation hook
-Developers must use:
-```
-react-i18next
-```
+import { useTranslation } from "react-i18next";
 
-Example:
-```TypeScript
-const { t } = useTranslation()
+const { t } = useTranslation();
+
+<h1>{t("login.title")}</h1>
 ```
 
 ### 1.3.6 Responsiveness Strategy
 Responsiveness must be centralized using breakpoint tokens.
 
-#### Breakpoints
-```
-styles/breakpoints.ts
+#### 1.3.6.1 Breakpoints
+Only source of truth is [globals.css](/src/styles/globals.css).\
+To modify the size for the breakpoints, change the following variables in [globals.css](/src/styles/globals.css):
+
+```css
+  /*Define breakpoints for responsiveness*/
+  --bp-mobile: 480px;
+  --bp-tablet: 768px;
+  --bp-desktop: 1200px;
 ```
 
-Example:
-```TypeScript
-export const breakpoints = {
-  mobile: 480,
-  tablet: 768,
-  desktop: 1200
+#### 1.3.6.2 How to use
+1. Create css file for the component (e.g. [homePageLayout.css](/src/components/layouts/homePageLayout.css)). Add grid template for the breakpoints defined (do not hardcode breakpoints, use global breakpoint variables).
+```css
+/* src/components/layouts/homePageLayout.css */
+.home-grid {
+  display: grid;
+  gap: var(--spacing-md);
+  grid-template-columns: 1fr; /* mobile */
+}
+
+@media (min-width: var(--bp-tablet)) {
+  .home-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)); /* tablet */
+  }
+}
+
+@media (min-width: var(--bp-desktop)) {
+  .home-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)); /* desktop */
+  }
+}
+
+.card,
+.table,
+.activity {
+  width: 100%;      /* evita fixed widths */
+  min-width: 0;     /* evita overflow en grid/flex */
 }
 ```
-
-#### Responsive rules
-Developers must:
-- Use flex/grid layouts
-- Avoid fixed widths
-- Use responsive utilities
-
-Example:
-```
-grid-template-columns:
-1 column mobile
-2 columns tablet
-3 columns desktop
+2. Create the component (e.g. [homePageLayout.tsx](/src/components/layouts/homePageLayout.tsx)).
+```tsx
+<div className="home-grid">
+  <section className="card">t("home.summary-cards")Summary cards</section>
+  <section className="table">t("home.uploaded-files-table")</section>
+  <section className="activity">t("home.activity-log")</section>
+</div>
 ```
 
-#### Layout example
-```
-Home Page
- ├ Summary cards
- ├ Uploaded files table
- └ Activity log
-```
-
-Responsive behavior:
-| Device | Layout |
-|--------|--------|
-| Mobile | Vertical stack |
-| Tablet | 2 column grid |
-| Desktop | 3 column grid |
+#### 1.3.6.3 Enforcing this
+- Do not define breakpoints outside of [globals.css](/src/styles/globals.css).
+- PR rule do not accept media (min-width: ...px) outside of [styles](/src/styles)
+- CI check (fail build if harcoded media found):
+  - rg -n "@media\s*\(min-width:\s*\d+px\)" src --glob "!src/styles/**"
+  - rg -n "width:\s*[0-9]+px" src
+- Checklist:
+  - Use grid/flex
+  - No fixed widths
+  - Use responsive utils/tokens
+  - Tested in mobile/tablet/desktop
 
 ### 1.3.7 Testing Requirements for Components
 Each component must include tests.
@@ -510,6 +567,19 @@ preview module
 
 ## 1.4 Security
 Tecnologías, técnicas y classes con su respectiva ubicación en la estructura del proyecto responsables de la autenticación y la autorización de permisos y sesiones. 
+
+Soporta MFA, usa correo y contraseña y luego Authenticator App
+- Single Sign On
+- Azure MS Entra ID
+- Auth0 Server
+- Authenticator Server Name
+- RBAC
+
+**Permission List:**
+|Código|Descripción|
+|-----|-----------|
+|UPLOAD-DUA|El usuario puede actualizar la pantalla default del DUA|
+|OPEN-FOLDER|Abre una carpeta bla bal bla|
 
 ### 1.4.1 Technologies
 - React Router
@@ -605,13 +675,15 @@ Tecnologías, técnicas y classes con su respectiva ubicación en la estructura 
 Expandir en cómo funciona el permission hook\
 Developers must never write:
 ```TypeScript
-if (user.role === "admin")
+{hasPermission("dua.generate") && hasPermission("files.upload") && (
+  <StartGenerationButton />
+)}
 ```
 directly inside pages or components. Instead they should use:
 ```TypeScript
 const { hasPermission } = usePermissions();
 
-{hasPermission("dua.generate") && <StartGenerationButton />}
+{hasPolicy("canGenerateDua") && <StartGenerationButton />}
 ```
 
 **To add additional roles/permissions:**
@@ -656,7 +728,7 @@ const { hasPermission } = usePermissions();
   };
   ```
 
-Permissions should be added in the backend as well in order for this to work
+If permissions for an action change, only change the permissions mapped to that policy.
 
 ### 1.4.4 Routing Protection
 This project has three methods of routing protection, use depending on each routes context
@@ -674,7 +746,7 @@ Example usage:
   </AuthGuard>
 ```
 
-#### 1.4.4.1 Guest Guard
+#### 1.4.4.2 Guest Guard
 Use this guard to prevent authenticated users accessing unauthenticated sites
 
 Example usage:
@@ -685,7 +757,7 @@ Example usage:
   </GuestGuard>
 ```
 
-#### 1.4.4.1 Permission Guard
+#### 1.4.4.3 Permission Guard
 Use this guard when an action requires an access policy to prevent unauthorized accesss
 
 Example usage:
@@ -706,7 +778,10 @@ Example usage:
 #### HTTP Interceptors
 [httpInterceptors.ts](/src/services/httpInterceptors.ts)
 
-### 1.4.6 Storage Rules
+### 1.4.6 Secure Storage
+Cuál es el servicio de secure storage para env variables, keys y sensitive data?
+Azure Key Vault
+
 Agregar ejemplos y cómo es que nos aseguramos de no guardar passwords, tokens, etc
 **Allowed storage**
 - UI preferences
@@ -818,6 +893,7 @@ src/features/auth/hooks/useLogout.ts
 src/features/auth/services/authService.ts
 src/security/providers/SessionProvider.tsx 
 ```
+
 ## 1.5 Layered design
 
 The frontend follows a five-layer architecture where each layer has a clear responsibility and well-defined dependency rules. This design ensures separation of concerns, testability, and consistency with the component hierarchy, security model, and project structure already defined.

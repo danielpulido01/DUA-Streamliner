@@ -1,0 +1,6 @@
+{
+  "login.title": "Login",
+  "login.username": "Nombre de usuario",
+  "login.password": "Contraseña",
+  "login.token": "Token de un solo uso"
+}
