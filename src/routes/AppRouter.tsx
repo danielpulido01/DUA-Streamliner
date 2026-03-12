@@ -9,7 +9,7 @@
 </AuthGuard>
 
 <AuthGuard>
-  <PermissionGuard required={["dua.generate"]}>
+  <PolicyGuard required={["dua.generate"]}>
     <ConfigureGeneratorPage />
-  </PermissionGuard>
+  </PolicyGuard>
 </AuthGuard>

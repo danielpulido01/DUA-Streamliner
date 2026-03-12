@@ -1,15 +1,39 @@
-Responsibility:
+import type { ReactNode } from "react";
+import { Navigate, useLocation } from "react-router-dom";
+import { useSession } from "../../hooks/useSession";
+import { routes } from "../../routes/routeConfig";
 
-allow access only if session is authenticated
+type SessionLike = {
+  isAuthenticated?: boolean;
+  session?: {
+    isAuthenticated?: boolean;
+  } | null;
+};
 
-otherwise redirect to login
+function isAuthenticated(session: SessionLike): boolean {
+  if (typeof session.isAuthenticated === "boolean") {
+    return session.isAuthenticated;
+  }
 
-Use for:
+  if (typeof session.session?.isAuthenticated === "boolean") {
+    return session.session.isAuthenticated;
+  }
 
-Home
+  return false;
+}
 
-Configure Generator
+type AuthGuardProps = {
+  children: ReactNode;
+  redirectTo?: string;
+};
 
-Progress
+export function AuthGuard({ children, redirectTo = routes.login }: AuthGuardProps) {
+  const location = useLocation();
+  const session = useSession() as SessionLike;
 
-Preview
+  if (!isAuthenticated(session)) {
+    return <Navigate replace to={redirectTo} state={{ from: location }} />;
+  }
+
+  return <>{children}</>;
+}

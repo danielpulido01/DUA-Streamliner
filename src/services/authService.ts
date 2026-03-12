@@ -1,6 +1,6 @@
-import { apiClient } from "@/services/apiClient";
+import { apiClient } from "./services/apiClient";
 import type { LoginRequest } from "@/schemas/loginRequest.schema";
-import type { AuthSession } from "@/security/session/session.types";
+import type { AuthSession } from "@/types/session.types";
 
 export class AuthService {
   async login(payload: LoginRequest): Promise<AuthSession> {

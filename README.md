@@ -575,11 +575,7 @@ Soporta MFA, usa correo y contraseña y luego Authenticator App
 - Authenticator Server Name
 - RBAC
 
-**Permission List:**
-|Código|Descripción|
-|-----|-----------|
-|UPLOAD-DUA|El usuario puede actualizar la pantalla default del DUA|
-|OPEN-FOLDER|Abre una carpeta bla bal bla|
+
 
 ### 1.4.1 Technologies
 - React Router
@@ -672,7 +668,135 @@ Soporta MFA, usa correo y contraseña y luego Authenticator App
 8. Frontend redirects to the Home screen.
 
 ### 1.4.3 Authorization
-Expandir en cómo funciona el permission hook\
+
+#### 1.4.3.1 Roles
+Roles are found in [roles.ts](src/policies/roles.ts)
+
+| Code     | Description                                                                                                                |
+| -------- | -------------------------------------------------------------------------------------------------------------------------- |
+| admin    | Full access to the platform, including user, role, permission, audit, and system administration                            |
+| operator | Can upload files, configure the generator, start DUA generation, monitor progress, preview results, and download documents |
+| reviewer | Can review generated DUAs, preview documents, confirm them, and download results                                           |
+| viewer   | Can access Home, view files, view activity, and monitor process status, but cannot generate or confirm DUAs                |
+
+#### 1.4.3.2 Permissions
+Permissions are found in [permissions.ts](src/policies/permissions.ts)
+
+**Permission Catalog**
+| Code                   | Description                                                        |
+| ---------------------- | ------------------------------------------------------------------ |
+| auth.login             | User can authenticate using username, password, and one-time token |
+| auth.logout            | User can terminate the active session                              |
+| session.read           | User can access the Home screen through an active session          |
+| user.profile.read      | User can view their user information on the Home screen            |
+| files.read             | User can view uploaded files and their metadata                    |
+| files.upload           | User can upload folders or documents used for DUA generation       |
+| files.delete           | User can delete uploaded files                                     |
+| activity.read          | User can view recent activity related to their processes           |
+| dua.template.upload    | User can upload a DUA template used for document generation        |
+| dua.template.validate  | System validates uploaded templates before generation              |
+| dua.generate           | User can start the DUA generation process                          |
+| dua.preview            | User can preview the generated DUA before confirming               |
+| dua.confirm            | User can confirm the generated DUA document                        |
+| dua.download           | User can download the generated DUA document                       |
+| generation.read        | User can monitor the progress of a generation process              |
+| generation.refresh     | User can refresh the generation progress                           |
+| generation.errors.read | User can view warnings and errors generated during processing      |
+
+**Admin Permissions**
+| Code                   | Description                                   |
+| ---------------------- | --------------------------------------------- |
+| users.read             | Admin can view the list of users              |
+| users.create           | Admin can create new users                    |
+| users.update           | Admin can update user information             |
+| users.delete           | Admin can delete users                        |
+| roles.read             | Admin can view system roles                   |
+| roles.create           | Admin can create roles                        |
+| roles.update           | Admin can modify roles                        |
+| roles.delete           | Admin can delete roles                        |
+| permissions.read       | Admin can view permission definitions         |
+| permissions.assign     | Admin can assign permissions to roles         |
+| generation.cancel      | Admin can cancel an active generation process |
+| activity.audit.read    | Admin can view the complete system audit log  |
+| system.settings.update | Admin can modify system configuration         |
+
+
+#### 1.4.3.3 Role-Permission Mapping
+Role to permissions mapping is found in [rolePermissions.ts](src/policies/rolePermissions.ts)
+
+| Role     | Permissions                                                                                                                                                                                                                                         |
+| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| admin    | All permissions                                                                                                                                                                                                                                     |
+| operator | auth.login, auth.logout, session.read, user.profile.read, files.read, files.upload, activity.read, dua.template.upload, dua.template.validate, dua.generate, generation.read, generation.refresh, generation.errors.read, dua.preview, dua.download |
+| reviewer | auth.login, auth.logout, session.read, user.profile.read, files.read, activity.read, dua.preview, dua.confirm, dua.download, generation.read, generation.refresh, generation.errors.read                                                            |
+| viewer   | auth.login, auth.logout, session.read, user.profile.read, files.read, activity.read, generation.read                                                                                                                                                |
+
+
+#### 1.4.3.4 Access Policies
+Access Policies are found in [accessPolicy.ts](src/policies/accessPolicy.ts)
+
+| Policy                  | Required Permissions                                       | Description                                           |
+| ----------------------- | ---------------------------------------------------------- | ----------------------------------------------------- |
+| canViewHome             | session.read, user.profile.read, files.read, activity.read | Allows access to the Home screen and its main widgets |
+| canGenerateDua          | dua.generate, files.upload, dua.template.upload            | Allows starting the DUA generation flow               |
+| canMonitorGeneration    | generation.read                                            | Allows viewing generation progress                    |
+| canRefreshGeneration    | generation.refresh                                         | Allows refreshing process status                      |
+| canViewGenerationErrors | generation.errors.read                                     | Allows viewing warnings and processing errors         |
+| canPreviewDua           | dua.preview                                                | Allows previewing the generated DUA                   |
+| canConfirmDua           | dua.confirm                                                | Allows confirming the generated DUA                   |
+| canDownloadDua          | dua.download                                               | Allows downloading the generated DUA file             |
+| canManageUsers          | users.read, users.create, users.update, users.delete       | Allows user administration                            |
+| canManageRoles          | roles.read, roles.create, roles.update, roles.delete       | Allows role administration                            |
+| canAssignPermissions    | permissions.read, permissions.assign                       | Allows permission assignment to roles                 |
+| canReadAuditLog         | activity.audit.read                                        | Allows access to full audit logs                      |
+| canManageSystemSettings | system.settings.update                                     | Allows changing platform settings                     |
+| canCancelGeneration     | generation.cancel                                          | Allows canceling active generation processes          |
+
+
+#### 1.4.3.5 Routing Protection
+This project has three methods of routing protection, use depending on each routes context.
+
+**[AuthGuard.tsx](src/auth/guards/AuthGuard.tsx)**
+
+Use this guard to prevent unathenticated access to specific routes.
+
+Example usage:
+[AppRouter.tsx](/src/routes/AppRouter.tsx)
+```TypeScript
+  <AuthGuard>
+    <DashboardLayout>
+      <HomePage />
+    </DashboardLayout>
+  </AuthGuard>
+```
+
+**[GuestGuard.tsx](src/auth/guards/GuestGuard.tsx)**
+
+Use this guard to prevent authenticated users accessing unauthenticated sites.
+
+Example usage:
+[AppRouter.tsx](/src/routes/AppRouter.tsx)
+```TypeScript
+  <GuestGuard>
+    <LoginPage />
+  </GuestGuard>
+```
+
+**[PolicyGuard.tsx](src/auth/guards/PolicyGuard.tsx)**
+
+Use this guard when an entire route, page, or protected section requires a specific set of permissions defined by an access policy.
+
+Example usage:
+[AppRouter.tsx](/src/routes/AppRouter.tsx)
+  ```TypeScript
+  <AuthGuard>
+    <PolicyGuard required={accessPolicy.canGenerateDua}>
+      <ConfigureGeneratorPage />
+    </PolicyGuard>
+  </AuthGuard>
+  ```
+
+#### 1.4.3.6 Usage
 Developers must never write:
 ```TypeScript
 {hasPermission("dua.generate") && hasPermission("files.upload") && (
@@ -681,12 +805,135 @@ Developers must never write:
 ```
 directly inside pages or components. Instead they should use:
 ```TypeScript
-const { hasPermission } = usePermissions();
+const { hasAccess } = usePolicies();
 
-{hasPolicy("canGenerateDua") && <StartGenerationButton />}
+{hasAccess("canGenerateDua") && <StartGenerationButton />}
+```
+Policies centralize business access rules so that permission changes are made in one place only.
+
+Use permissions directly only inside:
+- policy definitions
+- low-level authorization utilities
+- backend authorization logic
+
+**When to use policy hooks vs guards**
+
+Use `PermissionGuard` when the entire route, page, or major protected section must be blocked for unauthorized users.
+
+Example:
+```TypeScript
+<AuthGuard>
+  <PermissionGuard required={accessPolicy.canGenerateDua}>
+    <ConfigureGeneratorPage />
+  </PermissionGuard>
+</AuthGuard>
 ```
 
+Use `usePolicies()` inside components to control smaller UI behaviors such as:
+- showing or hiding buttons
+- rendering optional sections
+- displaying access explanations
+- detecting partial access
+
+Example:
+```TypeScript
+const { hasAccess } = usePolicies();
+
+{hasAccess("canGenerateDua") && <StartGenerationButton />}
+```
+
+**hasAccess**
+
+Use `hasAccess` when the user must have all permissions required by the policy.
+
+This is the default method for most actions.
+
+Example:
+```ts
+const { hasAccess } = usePolicies();
+
+const canGenerateDua = hasAccess("canGenerateDua");
+
+return (
+  <>
+    {canGenerateDua && <StartGenerationButton />}
+  </>
+);
+```
+Use `hasAccess` for:
+- action buttons
+- form submission actions
+- protected widgets
+- feature visibility that requires full access
+
+**hasSomeAccess**
+
+Use `hasSomeAccess` when a screen or component can still provide value with partial access.
+
+This is useful when a section contains multiple sub-features and you want to render the container if the user can access at least one of them.
+
+Example:
+```ts
+const { hasSomeAccess, hasAccess } = usePolicies();
+
+return (
+  <>
+    {hasSomeAccess("canViewHome") && (
+      <HomePanel>
+        {hasAccess("canViewHome") ? (
+          <FullHomeContent />
+        ) : (
+          <LimitedHomeContent />
+        )}
+      </HomePanel>
+    )}
+  </>
+);
+```
+
+Use `hasSomeAccess` for:
+- dashboards with partial widgets
+- grouped action menus
+- sections that degrade gracefully
+- navigation groups where at least one item is available
+
+Do not use `hasSomeAccess` for:
+- destructive actions
+- form submissions
+- secure business operations
+- anything that requires full authorization
+
+**getMissingPermissions(policyName)**
+
+Use `getMissingPermissions` when the UI needs to explain why access is denied or when debugging authorization.
+
+Example:
+```ts
+const { hasAccess, getMissingPermissions } = usePolicies();
+
+if (!hasAccess("canManageUsers")) {
+  return (
+    <AccessDeniedMessage
+      missingPermissions={getMissingPermissions("canManageUsers")}
+    />
+  );
+}
+```
+
+Use `getMissingPermissions` for:
+- admin/debug pages
+- support troubleshooting
+- access denied messages
+- logs and diagnostics
+
+Do not expose raw permission codes to end users unless that is intentional for admin or internal tools.
+
+For normal users, prefer friendly messages like:
+- "You do not have access to generate DUAs."
+- "Contact an administrator if you need this action enabled."
+
 **To add additional roles/permissions:**
+
 1. Add role definition in [roles.ts](/src/policies/roles.ts)
   ```TypeScript
   export const Roles = {
@@ -730,47 +977,9 @@ const { hasPermission } = usePermissions();
 
 If permissions for an action change, only change the permissions mapped to that policy.
 
-### 1.4.4 Routing Protection
-This project has three methods of routing protection, use depending on each routes context
 
-#### 1.4.4.1 Auth Guard
-Use this guard to prevent unathenticated access
 
-Example usage:
-[AppRouter.tsx](/src/routes/AppRouter.tsx)
-```TypeScript
-  <AuthGuard>
-    <DashboardLayout>
-      <HomePage />
-    </DashboardLayout>
-  </AuthGuard>
-```
-
-#### 1.4.4.2 Guest Guard
-Use this guard to prevent authenticated users accessing unauthenticated sites
-
-Example usage:
-[AppRouter.tsx](/src/routes/AppRouter.tsx)
-```TypeScript
-  <GuestGuard>
-    <LoginPage />
-  </GuestGuard>
-```
-
-#### 1.4.4.3 Permission Guard
-Use this guard when an action requires an access policy to prevent unauthorized accesss
-
-Example usage:
-[AppRouter.tsx](/src/routes/AppRouter.tsx)
-  ```TypeScript
-  <AuthGuard>
-    <PermissionGuard required={accessPolicy.canGenerateDua}>
-      <ConfigureGeneratorPage />
-    </PermissionGuard>
-  </AuthGuard>
-  ```
-
-### 1.4.5 API Communication
+### 1.4.4 API Communication
 
 #### Centralized API Client
 [apiClient.ts](/src/services/apiClient.ts)
@@ -778,7 +987,7 @@ Example usage:
 #### HTTP Interceptors
 [httpInterceptors.ts](/src/services/httpInterceptors.ts)
 
-### 1.4.6 Secure Storage
+### 1.4.5 Secure Storage
 Cuál es el servicio de secure storage para env variables, keys y sensitive data?
 Azure Key Vault
 
@@ -800,7 +1009,7 @@ Agregar ejemplos y cómo es que nos aseguramos de no guardar passwords, tokens, 
 - backend session stored in secure, HTTP-only, same-site cookies
 - frontend session state kept in memory through SessionProvider
 
-### 1.4.7 Logout
+### 1.4.6 Logout
 Responsibilities:
 - call backend logout endpoint
 - clear session provider state
@@ -809,7 +1018,7 @@ Responsibilities:
 
 [useLogout.ts](/src/hooks/useLogout.ts)
 
-### 1.4.8 Session Expiration
+### 1.4.7 Session Expiration
 Como es que pasa todo esto
 When backend returns 401 Unauthorized:
 - interceptor must detect it
@@ -817,7 +1026,7 @@ When backend returns 401 Unauthorized:
 - user is redirected to login
 - user sees a session expired message
 
-### 1.4.9 Screen-Level Security Mapping
+### 1.4.8 Screen-Level Security Mapping
 Cambiar lo de responsible elements y rules por ejemplos reales de como aseguramos cada cosa en codigo
 #### Login screen
 
@@ -848,13 +1057,13 @@ Rules:
 Responsible elements:
 ```
 src/security/guards/AuthGuard.tsx
-src/security/guards/PermissionGuard.tsx
+src/security/guards/PolicyGuard.tsx
 src/security/policies/accessPolicy.ts
 ```
 ```TypeScript
-<PermissionGuard required={accessPolicy.canGenerateDua}>
+<PolicyGuard required={accessPolicy.canGenerateDua}>
   <ConfigureGeneratorPage />
-</PermissionGuard>
+</PolicyGuard>
 ```
 
 Rules:
@@ -866,7 +1075,7 @@ Rules:
 Responsible elements:
 ```
 src/security/guards/AuthGuard.tsx
-src/security/guards/PermissionGuard.tsx
+src/security/guards/PolicyGuard.tsx
 ```
 Rules:
 - requires authenticated session
@@ -877,7 +1086,7 @@ Rules:
 Responsible elements:
 ```
 src/security/guards/AuthGuard.tsx
-src/security/guards/PermissionGuard.tsx
+src/security/guards/PolicyGuard.tsx
 ```
 Rules:
 - requires authenticated session

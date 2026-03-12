@@ -1,5 +1,12 @@
-Responsibilities:
-expose current user
-expose permissions
-expose auth status
-expose session actions
+import { useContext } from "react";
+import { SessionContext, type SessionContextValue } from "../providers/SessionProvider";
+
+export function useSession(): SessionContextValue {
+  const context = useContext(SessionContext);
+
+  if (!context) {
+    throw new Error("useSession must be used inside SessionProvider");
+  }
+
+  return context;
+}

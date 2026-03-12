@@ -53,7 +53,7 @@ Según dónde vamos a hostear el app, hay que ver qué servicios de autenticaci�
 |Authenticator|Credential Server|
 |-----|-----------|
 |AWS Cognito|AMI (nativo de ellos) / OKTA|
-|Azyre MS Entra ID|Auth0 Server|
+|Azure MS Entra ID|Auth0 Server|
 |GCP|Auth0 Server|
 |Auth0|Auth0|
 |OKTA|OKTA|

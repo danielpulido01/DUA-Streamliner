@@ -1,21 +1,24 @@
-Responsibilities:
+type Permission = string;
 
-check if user has permission
+export const usePermissions = () => {
+  const permissions: Permission[] = [];
 
-check if user has all required permissions
+  const hasPermission = (permission: Permission): boolean => {
+    return permissions.includes(permission);
+  };
 
-check if user has at least one permission
+  const hasAllPermissions = (requiredPermissions: Permission[]): boolean => {
+    return requiredPermissions.every((permission) => permissions.includes(permission));
+  };
 
-Example API:
+  const hasAnyPermission = (requiredPermissions: Permission[]): boolean => {
+    return requiredPermissions.some((permission) => permissions.includes(permission));
+  };
 
-{
-  hasPermission,
-  hasAnyPermission,
-  hasAllPermissions
-}
-
-Example usage:
-
-const { hasPermission } = usePermissions();
-
-{hasPermission("dua.generate") && <StartGenerationButton />}
+  return {
+    permissions,
+    hasPermission,
+    hasAllPermissions,
+    hasAnyPermission,
+  };
+};
