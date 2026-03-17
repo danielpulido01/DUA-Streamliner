@@ -19,7 +19,7 @@ The core problem lies in the absence of an intelligent system capable of automat
 
 ## 1.1 Technology stack
 
-- Application Type: SSR Web App
+- Application Type: SPA Web App
 - Web Framework: Reactjs version 19.2
 - Web server: NodeJS version 21 with Vite
 - Coding Language: TypeScript 5.9.3
@@ -255,7 +255,7 @@ DashboardLayout
 #### Feature Components
 Feature-specific components tied to a business process.
 
-- Can call services
+- Coordinate business logic through hooks, which interact with services
 - Manage state
 - Compose composites + layouts
 
@@ -311,11 +311,10 @@ useGenerationProgress()
 ### 1.3.4 Styling and Branding Centralization
 All visual styles must be centralized using design tokens.
 
-#### 1.3.4.1 Globals file
-The [globals.css](/src/styles/globals.css) file is where the active theme gets applied. Add/modify this file when needing to add/change global/utility selectors (one time use).
-
-#### 1.3.4.2 Tokens file
-The [tokens.ts](/src/styles/tokens.ts) file contains the tokens used in other ts files. Add reusable tokens in this file for use in components.
+#### Tokens file
+```
+src/styles/tokens.ts
+```
 
 Example:
 ```
@@ -339,103 +338,59 @@ export const radius = {
 }
 ```
 
-#### 1.3.4.3 Theme configuration
-1. App root should always be wrapped with `ThemeProvider`.
-2. Render `ThemeSwitcher` component in a shared layout (e.g. topbar). This will allow users to switch themes
-3. Style components with CSS variables (`var(--color-primary)`) instead of hardcoded values.
-
-Example:
-
-```tsx
-import { ThemeProvider } from "../providers/ThemeProvider";
-import { ThemeSwitcher } from "../components/primitives/themeSwitcher";
-
-export function App() {
-  return (
-    <ThemeProvider>
-      <ThemeSwitcher />
-      {/* routes/components */}
-    </ThemeProvider>
-  );
-}
+#### Theme configuration
+Cómo hago para cambiar dark/light theme? Cómo agrego nuevo theme?
 ```
-
-#### 1.3.4.4 Adding a theme
-1. Open [theme.ts](/src/styles/theme.ts).
-2. Add a new key under `themes` with the same `Theme` shape.
-3. The new theme appears automatically in `ThemeSwitcher`.
-
+src/styles/theme.ts
+```
 Example:
-```ts
-custom: {
-  colors: { ...colors, primary: "#0F766E", background: "#ECFEFF" },
+
+export const theme = {
+  colors,
   spacing,
   radius,
-  typography: { fontFamily: "Inter, sans-serif", headingWeight: 600 },
+  typography: {
+    fontFamily: "Inter, sans-serif",
+    headingWeight: 600
+  }
 }
-```
 
-#### 1.3.4.5 How to use
-1. Create css file for the component, setting values based on the css global variables. Do not use hardcoded colors/spacing.
-```css
-.btn {
-  background: var(--color-primary);
-  color: var(--color-text);
-  border-radius: var(--radius-md);
-  padding: var(--space-md);
-}
-```
-2. Create the component.
-```tsx
-// src/components/primitives/button.tsx
-import "./button.css";
+#### Styling rules
+Developers must:
+- Use tokens
+- Avoid hardcoded colors
+- Avoid inline styles
 
-export function Button({ children }: { children: React.ReactNode }) {
-  return <button className="btn">{children}</button>;
-}
+Example:
+
+Correct
+```TypeScript
+<Button style={{ background: theme.colors.primary }} />
 ```
-3. Theme provider will change the values of the css variables when changing themes.
+Incorrect
+```TypeScript
+<Button style={{ background: "#0052CC" }} />
+```
 
 ### 1.3.5 Internationalization Strategy
-All text must be externalized. The languageSwitcher primitive is the component that allows users to switch languages, add this component on a header layout.
+All text must be externalized.
+Como es que realmente esto funciona en el código? Cómo se cambia de idioma? Cómo agrego un nuevo idioma?
 
 #### Translation folder
-The [i18n](/src/i18n) folder contains a file for each language code used in the application. To add a new language simply create another json file named as the language code in the [i18n](/src/i18n) and add the translations for each text.\
+```
+src/i18n
+ ├ en.json
+ └ es.json
+```
 
-#### How to add new language
-1. Create the [es.json](/src/i18n/es.json) file in the [i18n](/src/i18n) folder and add each text with its translation.
+Example:
 ```JSON
 {
   "login.title": "Login",
-  "login.username": "Nombre de usuario",
-  "login.password": "Contraseña",
-  "login.token": "Token de un solo uso"
+  "login.username": "Username",
+  "login.password": "Password",
+  "login.token": "One-time token"
 }
-```
-
-2. Add import and language definition in [config.ts](/src/i18n/config.ts)
-```TypeScript
-import en from "./en.json";
-import es from "./es.json";
-//import new languagges
-
-export const SUPPORTED_LANGUAGES = ["en", "es"] as const; // add other languages
-export type LanguageCode = (typeof SUPPORTED_LANGUAGES)[number];
-
-const resources = {
-  en: { translation: en },
-  es: { translation: es },
-  //add new language to this const
-};
-```
-
-3. Add label for the new language in [languageSwitcher.tsx](/src/components/primitives/languageSwitcher.tsx)
-```TypeScript
-const labels: Record<string, string> = {
-  en: "English",
-  es: "Español",
-  //Add new language
-};
 ```
 
 #### Usage rule
@@ -449,76 +404,64 @@ Incorrect
 
 Correct
 ```TypeScript
-import { useTranslation } from "react-i18next";
-
-const { t } = useTranslation();
-
 <h1>{t("login.title")}</h1>
+```
+#### Translation hook
+Developers must use:
+```
+react-i18next
+```
+
+Example:
+```TypeScript
+const { t } = useTranslation()
 ```
 
 ### 1.3.6 Responsiveness Strategy
 Responsiveness must be centralized using breakpoint tokens.
 
-#### 1.3.6.1 Breakpoints
-Only source of truth is [globals.css](/src/styles/globals.css).\
-To modify the size for the breakpoints, change the following variables in [globals.css](/src/styles/globals.css):
-
-```css
-  /*Define breakpoints for responsiveness*/
-  --bp-mobile: 480px;
-  --bp-tablet: 768px;
-  --bp-desktop: 1200px;
+#### Breakpoints
+```
+styles/breakpoints.ts
 ```
 
-#### 1.3.6.2 How to use
-1. Create css file for the component (e.g. [homePageLayout.css](/src/components/layouts/homePageLayout.css)). Add grid template for the breakpoints defined (do not hardcode breakpoints, use global breakpoint variables).
-```css
-/* src/components/layouts/homePageLayout.css */
-.home-grid {
-  display: grid;
-  gap: var(--spacing-md);
-  grid-template-columns: 1fr; /* mobile */
-}
-
-@media (min-width: var(--bp-tablet)) {
-  .home-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr)); /* tablet */
-  }
-}
-
-@media (min-width: var(--bp-desktop)) {
-  .home-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr)); /* desktop */
-  }
-}
-
-.card,
-.table,
-.activity {
-  width: 100%;      /* evita fixed widths */
-  min-width: 0;     /* evita overflow en grid/flex */
+Example:
+```TypeScript
+export const breakpoints = {
+  mobile: 480,
+  tablet: 768,
+  desktop: 1200
 }
 ```
-2. Create the component (e.g. [homePageLayout.tsx](/src/components/layouts/homePageLayout.tsx)).
-```tsx
-<div className="home-grid">
-  <section className="card">t("home.summary-cards")Summary cards</section>
-  <section className="table">t("home.uploaded-files-table")</section>
-  <section className="activity">t("home.activity-log")</section>
-</div>
+
+#### Responsive rules
+Developers must:
+- Use flex/grid layouts
+- Avoid fixed widths
+- Use responsive utilities
+
+Example:
+```
+grid-template-columns:
+1 column mobile
+2 columns tablet
+3 columns desktop
 ```
 
-#### 1.3.6.3 Enforcing this
-- Do not define breakpoints outside of [globals.css](/src/styles/globals.css).
-- PR rule do not accept media (min-width: ...px) outside of [styles](/src/styles)
-- CI check (fail build if harcoded media found):
-  - rg -n "@media\s*\(min-width:\s*\d+px\)" src --glob "!src/styles/**"
-  - rg -n "width:\s*[0-9]+px" src
-- Checklist:
-  - Use grid/flex
-  - No fixed widths
-  - Use responsive utils/tokens
-  - Tested in mobile/tablet/desktop
+#### Layout example
+```
+Home Page
+ ├ Summary cards
+ ├ Uploaded files table
+ └ Activity log
+```
+
+Responsive behavior:
+| Device | Layout |
+|--------|--------|
+| Mobile | Vertical stack |
+| Tablet | 2 column grid |
+| Desktop | 3 column grid |
 
 ### 1.3.7 Testing Requirements for Components
 Each component must include tests.
@@ -567,15 +510,6 @@ preview module
 
 ## 1.4 Security
 Tecnologías, técnicas y classes con su respectiva ubicación en la estructura del proyecto responsables de la autenticación y la autorización de permisos y sesiones. 
-
-Soporta MFA, usa correo y contraseña y luego Authenticator App
-- Single Sign On
-- Azure MS Entra ID
-- Auth0 Server
-- Authenticator Server Name
-- RBAC
-
-
 
 ### 1.4.1 Technologies
 - React Router
@@ -668,272 +602,19 @@ Soporta MFA, usa correo y contraseña y luego Authenticator App
 8. Frontend redirects to the Home screen.
 
 ### 1.4.3 Authorization
-
-#### 1.4.3.1 Roles
-Roles are found in [roles.ts](src/policies/roles.ts)
-
-| Code     | Description                                                                                                                |
-| -------- | -------------------------------------------------------------------------------------------------------------------------- |
-| admin    | Full access to the platform, including user, role, permission, audit, and system administration                            |
-| operator | Can upload files, configure the generator, start DUA generation, monitor progress, preview results, and download documents |
-| reviewer | Can review generated DUAs, preview documents, confirm them, and download results                                           |
-| viewer   | Can access Home, view files, view activity, and monitor process status, but cannot generate or confirm DUAs                |
-
-#### 1.4.3.2 Permissions
-Permissions are found in [permissions.ts](src/policies/permissions.ts)
-
-**Permission Catalog**
-| Code                   | Description                                                        |
-| ---------------------- | ------------------------------------------------------------------ |
-| auth.login             | User can authenticate using username, password, and one-time token |
-| auth.logout            | User can terminate the active session                              |
-| session.read           | User can access the Home screen through an active session          |
-| user.profile.read      | User can view their user information on the Home screen            |
-| files.read             | User can view uploaded files and their metadata                    |
-| files.upload           | User can upload folders or documents used for DUA generation       |
-| files.delete           | User can delete uploaded files                                     |
-| activity.read          | User can view recent activity related to their processes           |
-| dua.template.upload    | User can upload a DUA template used for document generation        |
-| dua.template.validate  | System validates uploaded templates before generation              |
-| dua.generate           | User can start the DUA generation process                          |
-| dua.preview            | User can preview the generated DUA before confirming               |
-| dua.confirm            | User can confirm the generated DUA document                        |
-| dua.download           | User can download the generated DUA document                       |
-| generation.read        | User can monitor the progress of a generation process              |
-| generation.refresh     | User can refresh the generation progress                           |
-| generation.errors.read | User can view warnings and errors generated during processing      |
-
-**Admin Permissions**
-| Code                   | Description                                   |
-| ---------------------- | --------------------------------------------- |
-| users.read             | Admin can view the list of users              |
-| users.create           | Admin can create new users                    |
-| users.update           | Admin can update user information             |
-| users.delete           | Admin can delete users                        |
-| roles.read             | Admin can view system roles                   |
-| roles.create           | Admin can create roles                        |
-| roles.update           | Admin can modify roles                        |
-| roles.delete           | Admin can delete roles                        |
-| permissions.read       | Admin can view permission definitions         |
-| permissions.assign     | Admin can assign permissions to roles         |
-| generation.cancel      | Admin can cancel an active generation process |
-| activity.audit.read    | Admin can view the complete system audit log  |
-| system.settings.update | Admin can modify system configuration         |
-
-
-#### 1.4.3.3 Role-Permission Mapping
-Role to permissions mapping is found in [rolePermissions.ts](src/policies/rolePermissions.ts)
-
-| Role     | Permissions                                                                                                                                                                                                                                         |
-| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| admin    | All permissions                                                                                                                                                                                                                                     |
-| operator | auth.login, auth.logout, session.read, user.profile.read, files.read, files.upload, activity.read, dua.template.upload, dua.template.validate, dua.generate, generation.read, generation.refresh, generation.errors.read, dua.preview, dua.download |
-| reviewer | auth.login, auth.logout, session.read, user.profile.read, files.read, activity.read, dua.preview, dua.confirm, dua.download, generation.read, generation.refresh, generation.errors.read                                                            |
-| viewer   | auth.login, auth.logout, session.read, user.profile.read, files.read, activity.read, generation.read                                                                                                                                                |
-
-
-#### 1.4.3.4 Access Policies
-Access Policies are found in [accessPolicy.ts](src/policies/accessPolicy.ts)
-
-| Policy                  | Required Permissions                                       | Description                                           |
-| ----------------------- | ---------------------------------------------------------- | ----------------------------------------------------- |
-| canViewHome             | session.read, user.profile.read, files.read, activity.read | Allows access to the Home screen and its main widgets |
-| canGenerateDua          | dua.generate, files.upload, dua.template.upload            | Allows starting the DUA generation flow               |
-| canMonitorGeneration    | generation.read                                            | Allows viewing generation progress                    |
-| canRefreshGeneration    | generation.refresh                                         | Allows refreshing process status                      |
-| canViewGenerationErrors | generation.errors.read                                     | Allows viewing warnings and processing errors         |
-| canPreviewDua           | dua.preview                                                | Allows previewing the generated DUA                   |
-| canConfirmDua           | dua.confirm                                                | Allows confirming the generated DUA                   |
-| canDownloadDua          | dua.download                                               | Allows downloading the generated DUA file             |
-| canManageUsers          | users.read, users.create, users.update, users.delete       | Allows user administration                            |
-| canManageRoles          | roles.read, roles.create, roles.update, roles.delete       | Allows role administration                            |
-| canAssignPermissions    | permissions.read, permissions.assign                       | Allows permission assignment to roles                 |
-| canReadAuditLog         | activity.audit.read                                        | Allows access to full audit logs                      |
-| canManageSystemSettings | system.settings.update                                     | Allows changing platform settings                     |
-| canCancelGeneration     | generation.cancel                                          | Allows canceling active generation processes          |
-
-
-#### 1.4.3.5 Routing Protection
-This project has three methods of routing protection, use depending on each routes context.
-
-**[AuthGuard.tsx](src/auth/guards/AuthGuard.tsx)**
-
-Use this guard to prevent unathenticated access to specific routes.
-
-Example usage:
-[AppRouter.tsx](/src/routes/AppRouter.tsx)
-```TypeScript
-  <AuthGuard>
-    <DashboardLayout>
-      <HomePage />
-    </DashboardLayout>
-  </AuthGuard>
-```
-
-**[GuestGuard.tsx](src/auth/guards/GuestGuard.tsx)**
-
-Use this guard to prevent authenticated users accessing unauthenticated sites.
-
-Example usage:
-[AppRouter.tsx](/src/routes/AppRouter.tsx)
-```TypeScript
-  <GuestGuard>
-    <LoginPage />
-  </GuestGuard>
-```
-
-**[PolicyGuard.tsx](src/auth/guards/PolicyGuard.tsx)**
-
-Use this guard when an entire route, page, or protected section requires a specific set of permissions defined by an access policy.
-
-Example usage:
-[AppRouter.tsx](/src/routes/AppRouter.tsx)
-  ```TypeScript
-  <AuthGuard>
-    <PolicyGuard required={accessPolicy.canGenerateDua}>
-      <ConfigureGeneratorPage />
-    </PolicyGuard>
-  </AuthGuard>
-  ```
-
-#### 1.4.3.6 Usage
+Expandir en cómo funciona el permission hook\
 Developers must never write:
 ```TypeScript
-{hasPermission("dua.generate") && hasPermission("files.upload") && (
-  <StartGenerationButton />
-)}
+if (user.role === "admin")
 ```
 directly inside pages or components. Instead they should use:
 ```TypeScript
-const { hasAccess } = usePolicies();
+const { hasPermission } = usePermissions();
 
-{hasAccess("canGenerateDua") && <StartGenerationButton />}
+{hasPermission("dua.generate") && <StartGenerationButton />}
 ```
-Policies centralize business access rules so that permission changes are made in one place only.
-
-Use permissions directly only inside:
-- policy definitions
-- low-level authorization utilities
-- backend authorization logic
-
-**When to use policy hooks vs guards**
-
-Use `PermissionGuard` when the entire route, page, or major protected section must be blocked for unauthorized users.
-
-Example:
-```TypeScript
-<AuthGuard>
-  <PermissionGuard required={accessPolicy.canGenerateDua}>
-    <ConfigureGeneratorPage />
-  </PermissionGuard>
-</AuthGuard>
-```
-
-Use `usePolicies()` inside components to control smaller UI behaviors such as:
-- showing or hiding buttons
-- rendering optional sections
-- displaying access explanations
-- detecting partial access
-
-Example:
-```TypeScript
-const { hasAccess } = usePolicies();
-
-{hasAccess("canGenerateDua") && <StartGenerationButton />}
-```
-
-**hasAccess**
-
-Use `hasAccess` when the user must have all permissions required by the policy.
-
-This is the default method for most actions.
-
-Example:
-```ts
-const { hasAccess } = usePolicies();
-
-const canGenerateDua = hasAccess("canGenerateDua");
-
-return (
-  <>
-    {canGenerateDua && <StartGenerationButton />}
-  </>
-);
-```
-Use `hasAccess` for:
-- action buttons
-- form submission actions
-- protected widgets
-- feature visibility that requires full access
-
-**hasSomeAccess**
-
-Use `hasSomeAccess` when a screen or component can still provide value with partial access.
-
-This is useful when a section contains multiple sub-features and you want to render the container if the user can access at least one of them.
-
-Example:
-```ts
-const { hasSomeAccess, hasAccess } = usePolicies();
-
-return (
-  <>
-    {hasSomeAccess("canViewHome") && (
-      <HomePanel>
-        {hasAccess("canViewHome") ? (
-          <FullHomeContent />
-        ) : (
-          <LimitedHomeContent />
-        )}
-      </HomePanel>
-    )}
-  </>
-);
-```
-
-Use `hasSomeAccess` for:
-- dashboards with partial widgets
-- grouped action menus
-- sections that degrade gracefully
-- navigation groups where at least one item is available
-
-Do not use `hasSomeAccess` for:
-- destructive actions
-- form submissions
-- secure business operations
-- anything that requires full authorization
-
-**getMissingPermissions(policyName)**
-
-Use `getMissingPermissions` when the UI needs to explain why access is denied or when debugging authorization.
-
-Example:
-```ts
-const { hasAccess, getMissingPermissions } = usePolicies();
-
-if (!hasAccess("canManageUsers")) {
-  return (
-    <AccessDeniedMessage
-      missingPermissions={getMissingPermissions("canManageUsers")}
-    />
-  );
-}
-```
-
-Use `getMissingPermissions` for:
-- admin/debug pages
-- support troubleshooting
-- access denied messages
-- logs and diagnostics
-
-Do not expose raw permission codes to end users unless that is intentional for admin or internal tools.
-
-For normal users, prefer friendly messages like:
-- "You do not have access to generate DUAs."
-- "Contact an administrator if you need this action enabled."
 
 **To add additional roles/permissions:**
-
 1. Add role definition in [roles.ts](/src/policies/roles.ts)
   ```TypeScript
   export const Roles = {
@@ -975,11 +656,49 @@ For normal users, prefer friendly messages like:
   };
   ```
 
-If permissions for an action change, only change the permissions mapped to that policy.
+Permissions should be added in the backend as well in order for this to work
 
+### 1.4.4 Routing Protection
+This project has three methods of routing protection, use depending on each routes context
 
+#### 1.4.4.1 Auth Guard
+Use this guard to prevent unathenticated access
 
-### 1.4.4 API Communication
+Example usage:
+[AppRouter.tsx](/src/routes/AppRouter.tsx)
+```TypeScript
+  <AuthGuard>
+    <DashboardLayout>
+      <HomePage />
+    </DashboardLayout>
+  </AuthGuard>
+```
+
+#### 1.4.4.1 Guest Guard
+Use this guard to prevent authenticated users accessing unauthenticated sites
+
+Example usage:
+[AppRouter.tsx](/src/routes/AppRouter.tsx)
+```TypeScript
+  <GuestGuard>
+    <LoginPage />
+  </GuestGuard>
+```
+
+#### 1.4.4.1 Permission Guard
+Use this guard when an action requires an access policy to prevent unauthorized accesss
+
+Example usage:
+[AppRouter.tsx](/src/routes/AppRouter.tsx)
+  ```TypeScript
+  <AuthGuard>
+    <PermissionGuard required={accessPolicy.canGenerateDua}>
+      <ConfigureGeneratorPage />
+    </PermissionGuard>
+  </AuthGuard>
+  ```
+
+### 1.4.5 API Communication
 
 #### Centralized API Client
 [apiClient.ts](/src/services/apiClient.ts)
@@ -987,10 +706,7 @@ If permissions for an action change, only change the permissions mapped to that 
 #### HTTP Interceptors
 [httpInterceptors.ts](/src/services/httpInterceptors.ts)
 
-### 1.4.5 Secure Storage
-Cuál es el servicio de secure storage para env variables, keys y sensitive data?
-Azure Key Vault
-
+### 1.4.6 Storage Rules
 Agregar ejemplos y cómo es que nos aseguramos de no guardar passwords, tokens, etc
 **Allowed storage**
 - UI preferences
@@ -1009,7 +725,7 @@ Agregar ejemplos y cómo es que nos aseguramos de no guardar passwords, tokens, 
 - backend session stored in secure, HTTP-only, same-site cookies
 - frontend session state kept in memory through SessionProvider
 
-### 1.4.6 Logout
+### 1.4.7 Logout
 Responsibilities:
 - call backend logout endpoint
 - clear session provider state
@@ -1018,7 +734,7 @@ Responsibilities:
 
 [useLogout.ts](/src/hooks/useLogout.ts)
 
-### 1.4.7 Session Expiration
+### 1.4.8 Session Expiration
 Como es que pasa todo esto
 When backend returns 401 Unauthorized:
 - interceptor must detect it
@@ -1026,7 +742,7 @@ When backend returns 401 Unauthorized:
 - user is redirected to login
 - user sees a session expired message
 
-### 1.4.8 Screen-Level Security Mapping
+### 1.4.9 Screen-Level Security Mapping
 Cambiar lo de responsible elements y rules por ejemplos reales de como aseguramos cada cosa en codigo
 #### Login screen
 
@@ -1057,13 +773,13 @@ Rules:
 Responsible elements:
 ```
 src/security/guards/AuthGuard.tsx
-src/security/guards/PolicyGuard.tsx
+src/security/guards/PermissionGuard.tsx
 src/security/policies/accessPolicy.ts
 ```
 ```TypeScript
-<PolicyGuard required={accessPolicy.canGenerateDua}>
+<PermissionGuard required={accessPolicy.canGenerateDua}>
   <ConfigureGeneratorPage />
-</PolicyGuard>
+</PermissionGuard>
 ```
 
 Rules:
@@ -1075,7 +791,7 @@ Rules:
 Responsible elements:
 ```
 src/security/guards/AuthGuard.tsx
-src/security/guards/PolicyGuard.tsx
+src/security/guards/PermissionGuard.tsx
 ```
 Rules:
 - requires authenticated session
@@ -1086,7 +802,7 @@ Rules:
 Responsible elements:
 ```
 src/security/guards/AuthGuard.tsx
-src/security/guards/PolicyGuard.tsx
+src/security/guards/PermissionGuard.tsx
 ```
 Rules:
 - requires authenticated session
@@ -1102,477 +818,88 @@ src/features/auth/hooks/useLogout.ts
 src/features/auth/services/authService.ts
 src/security/providers/SessionProvider.tsx 
 ```
-
 ## 1.5 Layered design
 
-The frontend follows a five-layer architecture where each layer has a clear responsibility and well-defined dependency rules. This design ensures separation of concerns, testability, and consistency with the component hierarchy, security model, and project structure already defined.
+The frontend follows a five-layer architecture where each layer has a distinct responsibility and interactions flow strictly downward through hooks and services. This keeps the codebase maintainable and testable.
 
-### 1.5.1 Layer Overview
-
-```
-┌─────────────────────────────────────────────────┐
-│           1. Presentation Layer                  │
-│     (components/, features/, layouts, pages)     │
-├─────────────────────────────────────────────────┤
-│           2. Application Layer                   │
-│         (hooks/, feature-level hooks)            │
-├─────────────────────────────────────────────────┤
-│  3. Domain-Oriented Frontend Logic Layer         │
-│    (schemas/, policies/, domain rules)           │
-├─────────────────────────────────────────────────┤
-│       4. Service / Integration Layer             │
-│          (services/, apiClient)                  │
-├─────────────────────────────────────────────────┤
-│   5. Cross-cutting Infrastructure Layer          │
-│  (security/, styles/, i18n/, utils/, providers/) │
-└─────────────────────────────────────────────────┘
-```
-
-### 1.5.2 Layer Responsibilities
-
-#### Layer 1 — Presentation Layer
-
-**Responsibility:** Render UI, capture user input, and display application state.
-
-**Mapped folders:**
-```
-src/components/primitives/    → Button, Input, Modal, ProgressBar
-src/components/composites/    → LoginForm, FileUploadArea, FileStatusTable
-src/components/layouts/       → AuthLayout, DashboardLayout
-src/features/auth/            → LoginPage.tsx
-src/features/dashboard/       → HomePage.tsx
-src/features/dua-generator/   → ConfigureGeneratorPage.tsx, ProgressPage.tsx, PreviewPage.tsx
-```
-
-**Rules:**
-- Primitives contain zero business logic; they only accept props and use theme tokens.
-- Composites combine primitives and delegate logic to hooks via props or direct hook calls.
-- Feature pages compose layouts + composites and connect to the Application Layer through hooks.
-- All visible text must use the `t()` function from `react-i18next`.
-
-```TypeScript
-// Feature page delegates to hooks — no direct API calls
-export function LoginPage() {
-  const { t } = useTranslation();
-  const { login, isLoading, error } = useLogin();
-
-  return (
-    <AuthLayout>
-      <h1>{t("login.title")}</h1>
-      <LoginForm onSubmit={login} isLoading={isLoading} error={error} />
-    </AuthLayout>
-  );
-}
-```
-
----
-
-#### Layer 2 — Application Layer
-
-**Responsibility:** Orchestrate user flows, manage state transitions, coordinate validation, service calls, and session updates.
-
-**Mapped folders:**
-```
-src/hooks/                    → useSession, usePermissions (shared hooks)
-src/features/auth/hooks/      → useLogin
-src/features/dua-generator/hooks/ → useUploadFiles, useGenerationProgress, usePreview
-src/features/dashboard/hooks/ → useDashboardData
-```
-
-**Rules:**
-- Hooks are the only bridge between the Presentation Layer and lower layers.
-- Each hook calls domain validation (Layer 3) before calling a service (Layer 4).
-- Hooks manage loading, error, and success states.
-- Hooks must not contain inline fetch/axios calls — they must go through services.
-
-```TypeScript
-// Application hook orchestrating: validation → service → session update
-export function useLogin() {
-  const { setSession } = useSession();
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function login(input: LoginRequest) {
-    setError(null);
-    setIsLoading(true);
-
-    // Layer 3: Domain validation
-    const parsed = loginRequestSchema.safeParse(input);
-    if (!parsed.success) {
-      setIsLoading(false);
-      setError("Invalid login data");
-      return false;
-    }
-
-    try {
-      // Layer 4: Service call
-      const session = await authService.login(parsed.data);
-      // Layer 5: Session management
-      setSession(session);
-      return true;
-    } catch {
-      setError("Invalid credentials");
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
-  return { login, isLoading, error };
-}
-```
-
----
-
-#### Layer 3 — Domain-Oriented Frontend Logic Layer
-
-**Responsibility:** Enforce data integrity, permission rules, and domain-specific UI logic before interacting with the backend.
-
-**Mapped folders:**
-```
-src/schemas/                      → loginRequest.schema.ts
-src/features/dua-generator/schemas/ → uploadConfig.schema.ts, templateValidation.schema.ts
-src/policies/roles.ts             → Role definitions
-src/policies/permissions.ts       → Permission constants
-src/policies/accessPolicy.ts      → Role-to-permission mapping
-```
-
-**Rules:**
-- All user input must be validated with Zod schemas before being sent to a service.
-- Permission checks must use the `usePermissions` hook — never direct role string comparisons.
-- Domain schemas live alongside the feature they belong to or in `src/schemas/` when shared.
-
-```TypeScript
-// Zod schema for DUA generation configuration
-import { z } from "zod";
-
-export const uploadConfigSchema = z.object({
-  files: z.array(z.instanceof(File)).min(1, "At least one document is required"),
-  templateFile: z.instanceof(File),
-  generateDate: z.string().datetime(),
-});
-
-export type UploadConfig = z.infer<typeof uploadConfigSchema>;
-```
-
-```TypeScript
-// Permission check in a feature component
-const { hasPermission } = usePermissions();
-
-{hasPermission("dua.generate") && (
-  <Button onClick={startGeneration}>{t("generator.start")}</Button>
-)}
-```
-
----
-
-#### Layer 4 — Service / Integration Layer
-
-**Responsibility:** Encapsulate all HTTP communication with the backend. Provide a single point of configuration for headers, base URL, error handling, and response transformation.
-
-**Mapped folders:**
-```
-src/services/apiClient.ts         → Centralized HTTP client (fetch/axios wrapper)
-src/services/authService.ts       → Authentication endpoints
-src/services/generatorService.ts  → DUA generation endpoints
-src/services/fileService.ts       → File upload and retrieval endpoints
-```
-
-**Rules:**
-- All backend communication must go through `apiClient`.
-- Services return typed responses — never raw HTTP responses to upper layers.
-- Services must not manage UI state (no `useState`, no `setLoading`).
-- Error propagation is done via thrown exceptions; hooks (Layer 2) catch and interpret them.
-
-```TypeScript
-// Centralized API client
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-
-export const apiClient = {
-  async post<T>(path: string, body?: unknown): Promise<T> {
-    const response = await fetch(`${API_BASE_URL}${path}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: body ? JSON.stringify(body) : undefined,
-    });
-    if (!response.ok) throw new Error(`API error: ${response.status}`);
-    return response.json();
-  },
-
-  async get<T>(path: string): Promise<T> {
-    const response = await fetch(`${API_BASE_URL}${path}`, {
-      method: "GET",
-      credentials: "include",
-    });
-    if (!response.ok) throw new Error(`API error: ${response.status}`);
-    return response.json();
-  },
-};
-```
-
-```TypeScript
-// Generator service — typed, stateless
-import { apiClient } from "./apiClient";
-
-export interface GenerationResult {
-  id: string;
-  status: "completed" | "failed";
-  previewUrl: string;
-  downloadUrl: string;
-}
-
-export class GeneratorService {
-  async startGeneration(configId: string): Promise<{ jobId: string }> {
-    return apiClient.post("/generator/start", { configId });
-  }
-
-  async getProgress(jobId: string): Promise<{ percentage: number; stage: string }> {
-    return apiClient.get(`/generator/progress/${jobId}`);
-  }
-
-  async getResult(jobId: string): Promise<GenerationResult> {
-    return apiClient.get(`/generator/result/${jobId}`);
-  }
-}
-
-export const generatorService = new GeneratorService();
-```
-
----
-
-#### Layer 5 — Cross-cutting Infrastructure Layer
-
-**Responsibility:** Provide shared capabilities used by all layers — session management, permission resolution, styling tokens, internationalization, observability, and generic utilities.
-
-**Mapped folders:**
-```
-src/providers/SessionProvider.tsx  → Session context provider
-src/types/session.types.ts        → Session type definitions
-src/hooks/useSession.ts           → Session access hook
-src/hooks/usePermissions.ts       → Permission resolution hook
-src/styles/tokens.ts              → Color, spacing, radius tokens
-src/styles/theme.ts               → Theme composition
-src/styles/breakpoints.ts         → Responsive breakpoints
-src/styles/globals.css            → Global styles
-src/i18n/en.json                  → English translations
-src/i18n/es.json                  → Spanish translations
-src/i18n/config.ts                → react-i18next configuration
-src/utils/                        → Shared helpers (formatters, constants)
-src/observability/                → Azure Application Insights initialization
-```
-
-**Rules:**
-- Infrastructure code must be domain-agnostic.
-- Session state is provided through React Context (`SessionProvider`) and consumed via `useSession`.
-- Observability is initialized at application bootstrap and available globally.
-- Style tokens are the single source of truth — no hardcoded values in components.
-
-```TypeScript
-// Session provider — wraps the app
-import { createContext, useContext, useState, type ReactNode } from "react";
-import type { AuthSession } from "../types/session.types";
-
-interface SessionContextValue {
-  session: AuthSession | null;
-  setSession: (session: AuthSession) => void;
-  clearSession: () => void;
-}
-
-const SessionContext = createContext<SessionContextValue | null>(null);
-
-export function SessionProvider({ children }: { children: ReactNode }) {
-  const [session, setSessionState] = useState<AuthSession | null>(null);
-
-  function setSession(session: AuthSession) {
-    setSessionState(session);
-  }
-
-  function clearSession() {
-    setSessionState(null);
-  }
-
-  return (
-    <SessionContext.Provider value={{ session, setSession, clearSession }}>
-      {children}
-    </SessionContext.Provider>
-  );
-}
-
-export function useSessionContext() {
-  const ctx = useContext(SessionContext);
-  if (!ctx) throw new Error("useSessionContext must be used within SessionProvider");
-  return ctx;
-}
-```
-
----
-
-### 1.5.3 Dependency Rules
-
-Each layer may only depend on the layer immediately below it or on the cross-cutting infrastructure layer. No layer may depend on a layer above it.
+**Architecture diagram:**
 
 ```
-Presentation  →  Application  →  Domain Logic  →  Services
-     ↓               ↓               ↓               ↓
-     └───────────────────── Infrastructure ──────────────┘
+  +------------------------------------------+
+  |  Presentation Layer                      |
+  |  Components, Pages, Features             |
+  +--------+-------------------------------+
+           | calls
+           V
+  +------------------------------------------+
+  |  Application Layer                       |
+  |  Hooks (useLogin, usePermissions, etc.)  |
+  +--------+-------------------------------+
+           | validates with
+           V
+  +------------------------------------------+
+  |  Domain Logic Layer                      |
+  |  Zod Schemas, Policies, Permissions     |
+  +--------+-------------------------------+
+           | calls
+           V
+  +------------------------------------------+
+  |  Services Layer                          |
+  |  apiClient, authService, etc.           |
+  +--------+-------------------------------+
+           | HTTP/REST
+           V
+       Backend / External APIs
+
+
+  Infrastructure Layer (Session, i18n, Styles, Utils)
+  Shared context across all layers above
 ```
 
-| Source Layer | Can depend on |
-|---|---|
-| Presentation | Application, Infrastructure |
-| Application | Domain Logic, Services, Infrastructure |
-| Domain Logic | Infrastructure only |
-| Services | Infrastructure only |
-| Infrastructure | No application layer dependencies |
+**Layer 1 — Presentation:** UI components (primitives, composites, layouts, feature pages) render data and capture user input. They never call services or APIs directly. Routing orchestration (AppRouter) and route guards (AuthGuard, GuestGuard, PermissionGuard) protect navigation based on authentication and permissions.
 
-**Violations to avoid:**
-- A primitive component importing a service (not allowed)
-- A service calling `useState` or managing UI state (not allowed)
-- A feature page calling `fetch` or `apiClient` directly (not allowed)
-- A hook comparing `user.role === "admin"` instead of using `usePermissions` (not allowed)
+**Layer 2 — Application:** Hooks orchestrate logic by coordinating validation, service calls, and state updates. Each hook flows: validate input → call service → update infrastructure (session, permissions).
 
----
+**Layer 3 — Domain Logic:** Zod schemas validate all user input. Permission checks happen via `usePermissions()` hook, never with direct role comparisons. Policies and constants define permissions and roles.
 
-### 1.5.4 Layer Mapping to `src/` Folder Structure
+**Layer 4 — Services:** `apiClient` and typed service classes (`authService`, `generatorService`) handle all backend communication. HTTP interceptors (`httpInterceptors.ts`) manage cross-cutting concerns like automatic session validation and 401 redirects. Services are stateless — they return data or throw errors.
 
-```
-src/
- ├ components/           → Layer 1: Presentation (primitives, composites, layouts)
- ├ features/             → Layer 1 + 2 + 3: Pages, feature hooks, feature schemas
- │   ├ auth/
- │   │   ├ LoginPage.tsx              → Layer 1
- │   │   ├ hooks/useLogin.ts          → Layer 2
- │   │   └ schemas/loginRequest.schema.ts → Layer 3
- │   ├ dua-generator/
- │   │   ├ ConfigureGeneratorPage.tsx  → Layer 1
- │   │   ├ ProgressPage.tsx           → Layer 1
- │   │   ├ PreviewPage.tsx            → Layer 1
- │   │   ├ hooks/                     → Layer 2
- │   │   └ schemas/                   → Layer 3
- │   └ dashboard/
- │       ├ HomePage.tsx               → Layer 1
- │       └ hooks/                     → Layer 2
- │
- ├ hooks/                → Layer 2 + 5: Shared hooks (useSession, usePermissions)
- ├ schemas/              → Layer 3: Shared validation schemas
- ├ services/             → Layer 4: Shared services and apiClient
- ├ policies/             → Layer 3: Roles, permissions, access policies
- ├ providers/            → Layer 5: SessionProvider, context providers
- ├ types/                → Layer 5: Shared type definitions
- ├ i18n/                 → Layer 5: Translations and config
- ├ styles/               → Layer 5: Tokens, theme, breakpoints, globals
- ├ observability/        → Layer 5: Azure Application Insights setup
- └ utils/                → Layer 5: Shared utilities
-```
+**Layer 5 — Infrastructure:** Shared across all layers—`SessionProvider` (session state), design tokens (colors, spacing), i18n (translations), observability (Azure Insights), and utilities.
 
----
+**Folder mapping:**
 
-### 1.5.5 Example Flow: Login
+| Folder | Layers | Purpose |
+|--------|--------|---------|
+| `src/components/` | Layer 1 | Primitives, composites, layouts |
+| `src/auth/guards/` | Layer 1 | Routing guards (AuthGuard, GuestGuard, PermissionGuard) |
+| `src/features/` | Layer 1, 2, 3 | Feature pages, hooks, schemas |
+| `src/hooks/` | Layer 2, 5 | Shared hooks (useSession, usePermissions) |
+| `src/services/` | Layer 4 | apiClient, authService, generatorService |
+| `src/policies/` | Layer 3 | Roles, permissions, access policies |
+| `src/schemas/` | Layer 3 | Zod validation schemas |
+| `src/providers/` | Layer 5 | SessionProvider, context |
+| `src/i18n/` | Layer 5 | Translations, react-i18next config |
+| `src/styles/` | Layer 5 | Tokens, theme, breakpoints, globals |
+| `src/types/` | Layer 5 | Session types, shared interfaces |
+| `src/utils/` | Layer 5 | Helpers, formatters, constants |
 
-Shows how a login request traverses all five layers:
+**Dependency rules:**
 
-```
-User clicks Login
-       │
-       ▼
-┌─ Layer 1: Presentation ─────────────────────────┐
-│  LoginPage → LoginForm captures input            │
-│  Calls login(input) from useLogin hook           │
-└──────────────────────────────────────────────────┘
-       │
-       ▼
-┌─ Layer 2: Application ──────────────────────────┐
-│  useLogin hook receives input                    │
-│  Calls loginRequestSchema.safeParse(input)       │
-└──────────────────────────────────────────────────┘
-       │
-       ▼
-┌─ Layer 3: Domain Logic ─────────────────────────┐
-│  Zod schema validates username, password, token  │
-│  Returns parsed data or validation error         │
-└──────────────────────────────────────────────────┘
-       │
-       ▼
-┌─ Layer 2: Application (continues) ──────────────┐
-│  useLogin calls authService.login(parsedData)    │
-└──────────────────────────────────────────────────┘
-       │
-       ▼
-┌─ Layer 4: Service ──────────────────────────────┐
-│  authService sends POST /auth/login via          │
-│  apiClient with credentials: "include"           │
-│  Returns AuthSession                             │
-└──────────────────────────────────────────────────┘
-       │
-       ▼
-┌─ Layer 5: Infrastructure ───────────────────────┐
-│  useLogin calls setSession(session)              │
-│  SessionProvider stores user + permissions        │
-│  Router redirects to Home                        │
-└──────────────────────────────────────────────────┘
-```
+- Presentation can only call Application (hooks) and Infrastructure.
+- Application can call Domain Logic, Services, and Infrastructure.
+- Domain Logic can only use Infrastructure.
+- Services can only use Infrastructure.
+- **No layer may call upward.**
 
----
+Violations: primitive components importing services, services calling `useState`, feature pages calling `fetch` directly, hooks comparing `user.role === "admin"` instead of using `usePermissions()`.
 
-### 1.5.6 Example Flow: DUA Generation
+**Example: Login flow**
 
-Shows how the DUA generation process traverses all five layers:
+User submits credentials → `LoginForm` calls `useLogin()` hook → hook validates with `loginRequestSchema` → calls `authService.login()` → `apiClient` sends request with secure cookies → backend returns session → hook calls `setSession()` → `SessionProvider` stores user + permissions → router redirects to Home.
 
-```
-User uploads files and template, clicks "Start Generation"
-       │
-       ▼
-┌─ Layer 1: Presentation ─────────────────────────┐
-│  ConfigureGeneratorPage → FileUploadArea         │
-│  Captures files + template                       │
-│  Calls startGeneration(config) from hook         │
-└──────────────────────────────────────────────────┘
-       │
-       ▼
-┌─ Layer 5: Infrastructure ───────────────────────┐
-│  usePermissions checks hasPermission             │
-│  ("dua.generate") before allowing action         │
-└──────────────────────────────────────────────────┘
-       │
-       ▼
-┌─ Layer 2: Application ──────────────────────────┐
-│  useUploadFiles hook receives config             │
-│  Calls uploadConfigSchema.safeParse(config)      │
-└──────────────────────────────────────────────────┘
-       │
-       ▼
-┌─ Layer 3: Domain Logic ─────────────────────────┐
-│  Zod schema validates: files.length >= 1,        │
-│  template exists, date is valid                  │
-└──────────────────────────────────────────────────┘
-       │
-       ▼
-┌─ Layer 4: Service ──────────────────────────────┐
-│  generatorService.startGeneration(configId)      │
-│  Returns { jobId }                               │
-└──────────────────────────────────────────────────┘
-       │
-       ▼
-┌─ Layer 1: Presentation ─────────────────────────┐
-│  Router navigates to ProgressPage                │
-│  useGenerationProgress polls for updates         │
-│  ProgressBar + file status table update in       │
-│  real time                                       │
-└──────────────────────────────────────────────────┘
-       │
-       ▼
-┌─ Layer 4: Service ──────────────────────────────┐
-│  generatorService.getResult(jobId)               │
-│  Returns preview URL and download URL            │
-└──────────────────────────────────────────────────┘
-       │
-       ▼
-┌─ Layer 1: Presentation ─────────────────────────┐
-│  PreviewPage renders DocumentPreview composite   │
-│  User reviews, confirms, and downloads .docx     │
-└──────────────────────────────────────────────────┘
-```
+**Example: DUA generation flow**
+
+User uploads files → `ConfigureGeneratorPage` calls `useUploadFiles()` hook → hook checks `hasPermission("dua.generate")` via infrastructure → validates with `uploadConfigSchema` → calls `generatorService.startGeneration()` → `apiClient` sends multipart upload → returns job ID → router navigates to `ProgressPage` → `useGenerationProgress()` polls for updates → when done, retrieves preview via service → `PreviewPage` renders result.
 
 ## 1.6  Design patterns
 
