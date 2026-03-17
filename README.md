@@ -138,18 +138,135 @@ Shows a message to the user verifying the session is closed
 ![Logout Screen](/media/logout.png)
 
 
-### 1.2.3 UX Test Results (PENDIENTE)
-- Escoger alguna app para ejecutar el UX Test usando esos wireframes
-- El test se lo van a aplicar en forma remota compartiendo un URL, a 3 estudiantes o amigos
-- Va a generar un reporte de resultados
-- Creamos un md table con los resultados
+### 1.2.3 UX Test Results
 
-- Evidencias
-![Juan mi amigo de bla bla](/media/testjuan.jpg)
-![Ana de bla bla](/media/testana.jpg)
+A usability test was conducted using Maze to validate the proposed wireframes of the DUA Streamliner system. The test was shared remotely via URL with 3 participants.
 
-- Heatmap
-![Dua Streamliner Heatmap](/media/heatmap.jpg)
+#### Test Objective
+Evaluate user ability to:
+- Log in successfully
+- Generate a DUA
+- Configure DUA generator correctly
+- Review the generated document
+- Log out of the system
+
+#### Tasks Executed
+
+| Task | Description |
+|------|------------|
+| Task 1 — Login | User attempts to log into the system |
+| Task 2 — Generate DUA | User initiates the DUA generation process |
+| Task 3 — Configure Generator | User uploads files and configures generation |
+| Task 4 — Review Document | User analyzes and validates generated DUA |
+| Task 5 — Logout | User ends the session |
+
+#### Participants
+- Lazaro Gonzalez (Student)
+- Jimena Sanchez (Student)
+- Juan Diego Arce (Student)
+- Josue Venegas (Student)
+
+#### Key Metrics (Maze)
+
+#### Overall Performance
+
+| Metric | Value | Interpretation |
+|--------|------|----------------|
+| Completion Rate | 100% | All users successfully completed all tasks, indicating a clear and understandable flow |
+| Success Rate | 100% | No task failures occurred |
+| Average Time on Task | 5.8 seconds | Tasks were completed quickly, suggesting high efficiency |
+| Misclick Rate | 6.7% | Low overall error rate, with minor friction concentrated in login |
+
+#### Task-Level Performance
+
+| Task | Avg Time (s) | Success Rate | Misclick Rate | Interpretation |
+|------|-------------|--------------|---------------|----------------|
+| Login | 14.2 | 100% | 33.3% | Higher friction; users hesitated or misclicked during authentication |
+| Generate DUA | 3.0 | 100% | 0% | Very clear action, no confusion |
+| Configure Generator | 4.3 | 100% | 0% | Process understood without errors |
+| Review Document | 4.5 | 100% | 0% | Validation step intuitive |
+| Logout | 3.1 | 100% | 0% | Simple and direct interaction |
+
+#### Findings
+
+- All participants successfully completed every task, indicating a clear and understandable user flow.
+- The login task showed a higher misclick rate (33.3%), suggesting minor usability friction in the authentication interface.
+- All other tasks showed 0% misclick rate, indicating strong clarity in navigation and actions.
+- The DUA generation and configuration process was completed quickly and without errors.
+- The review and logout flows were intuitive and required minimal effort.
+
+#### Observations
+
+- Users understood the system flow from login to document generation without guidance.
+- The interface provided clear feedback during each step of the process.
+- The login screen may require slight improvements in input clarity or button visibility.
+
+#### Evidence
+
+The following screenshot from Maze shows the registered participants and their test execution status:
+
+![Maze Participants](/media/participants.png)
+
+#### Task 1 — Login
+
+Users attempted to authenticate using their credentials.
+
+**Maze Evidence**
+
+![Task 1 - Login](/media/task1-login.png)
+
+**Heatmap**
+
+![Task 1 - Login Heatmap](/media/task1-heatmap.jpg)
+
+#### Task 2 — Generate DUA
+
+Users initiated the DUA generation process from the main interface.
+
+**Maze Evidence**
+
+![Task 2 - Generate DUA](/media/task2-generate.png)
+
+**Heatmap**
+
+![Task 2 - Generate DUA Heatmap](/media/task2-heatmap.jpg)
+
+#### Task 3 — Configure Generator
+
+Users uploaded files and configured the generation process.
+
+**Maze Evidence**
+
+![Task 3 - Configure Generator](/media/task3-configure.png)
+
+**Heatmap**
+
+![Task 3 - Configure Generator Heatmap](/media/task3-heatmap.jpg)
+
+#### Task 4 — Review Document
+
+Users reviewed the generated DUA and validated its correctness.
+
+**Maze Evidence**
+
+![Task 4 - Review Document](/media/task4-review.png)
+
+**Heatmap**
+
+![Task 4 - Review Document Heatmap](/media/task4-heatmap.jpg)
+
+#### Task 5 — Logout
+
+Users ended their session through the logout action.
+
+**Maze Evidence**
+
+![Task 5 - Logout](/media/task5-logout.png)
+
+**Heatmap**
+
+![Task 5 - Logout Heatmap](/media/task5-heatmap.jpg)
+
 
 ## 1.3 Component design strategy
 
