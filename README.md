@@ -213,11 +213,15 @@ Users attempted to authenticate using their credentials.
 
 **Maze Evidence**
 
-![Task 1 - Login](/media/task1-login.png)
+<p align="center">
+  <img src="/media/task1-login.png" width="600"/>
+</p>
 
 **Heatmap**
 
-![Task 1 - Login Heatmap](/media/task1-heatmap.jpg)
+<p align="center">
+  <img src="/media/task1-heatmap.jpg" width="600"/>
+</p>
 
 #### Task 2 — Generate DUA
 
@@ -225,11 +229,15 @@ Users initiated the DUA generation process from the main interface.
 
 **Maze Evidence**
 
-![Task 2 - Generate DUA](/media/task2-generate.png)
+<p align="center">
+  <img src="/media/task2-generate.png" width="600"/>
+</p>
 
 **Heatmap**
 
-![Task 2 - Generate DUA Heatmap](/media/task2-heatmap.jpg)
+<p align="center">
+  <img src="/media/task2-heatmap.jpg" width="600"/>
+</p>
 
 #### Task 3 — Configure Generator
 
@@ -237,11 +245,15 @@ Users uploaded files and configured the generation process.
 
 **Maze Evidence**
 
-![Task 3 - Configure Generator](/media/task3-configure.png)
+<p align="center">
+  <img src="/media/task3-configure.png" width="600"/>
+</p>
 
 **Heatmap**
 
-![Task 3 - Configure Generator Heatmap](/media/task3-heatmap.jpg)
+<p align="center">
+  <img src="/media/task3-heatmap.jpg" width="600"/>
+</p>
 
 #### Task 4 — Review Document
 
@@ -249,11 +261,15 @@ Users reviewed the generated DUA and validated its correctness.
 
 **Maze Evidence**
 
-![Task 4 - Review Document](/media/task4-review.png)
+<p align="center">
+  <img src="/media/task4-review.png" width="600"/>
+</p>
 
 **Heatmap**
 
-![Task 4 - Review Document Heatmap](/media/task4-heatmap.jpg)
+<p align="center">
+  <img src="/media/task4-heatmap.jpg" width="600"/>
+</p>
 
 #### Task 5 — Logout
 
@@ -261,11 +277,15 @@ Users ended their session through the logout action.
 
 **Maze Evidence**
 
-![Task 5 - Logout](/media/task5-logout.png)
+<p align="center">
+  <img src="/media/task5-logout.png" width="600"/>
+</p>
 
 **Heatmap**
 
-![Task 5 - Logout Heatmap](/media/task5-heatmap.jpg)
+<p align="center">
+  <img src="/media/task5-heatmap.jpg" width="600"/>
+</p>
 
 
 ## 1.3 Component design strategy
