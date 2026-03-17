@@ -213,15 +213,11 @@ Users attempted to authenticate using their credentials.
 
 **Maze Evidence**
 
-<p align="center">
-  <img src="/media/task1-login.png" width="600"/>
-</p>
+<img src="/media/task1-login.png" width="600"/>
 
 **Heatmap**
 
-<p align="center">
-  <img src="/media/task1-heatmap.jpg" width="600"/>
-</p>
+<img src="/media/task1-heatmap.jpg" width="400"/>
 
 #### Task 2 — Generate DUA
 
@@ -229,15 +225,11 @@ Users initiated the DUA generation process from the main interface.
 
 **Maze Evidence**
 
-<p align="center">
-  <img src="/media/task2-generate.png" width="600"/>
-</p>
+<img src="/media/task2-generate.png" width="600"/>
 
 **Heatmap**
 
-<p align="center">
-  <img src="/media/task2-heatmap.jpg" width="600"/>
-</p>
+<img src="/media/task2-heatmap.jpg" width="400"/>
 
 #### Task 3 — Configure Generator
 
@@ -245,15 +237,11 @@ Users uploaded files and configured the generation process.
 
 **Maze Evidence**
 
-<p align="center">
-  <img src="/media/task3-configure.png" width="600"/>
-</p>
+<img src="/media/task3-configure.png" width="600"/>
 
 **Heatmap**
 
-<p align="center">
-  <img src="/media/task3-heatmap.jpg" width="600"/>
-</p>
+<img src="/media/task3-heatmap.jpg" width="400"/>
 
 #### Task 4 — Review Document
 
@@ -261,15 +249,11 @@ Users reviewed the generated DUA and validated its correctness.
 
 **Maze Evidence**
 
-<p align="center">
-  <img src="/media/task4-review.png" width="600"/>
-</p>
+<img src="/media/task4-review.png" width="600"/>
 
 **Heatmap**
 
-<p align="center">
-  <img src="/media/task4-heatmap.jpg" width="600"/>
-</p>
+<img src="/media/task4-heatmap.jpg" width="400"/>
 
 #### Task 5 — Logout
 
@@ -277,15 +261,11 @@ Users ended their session through the logout action.
 
 **Maze Evidence**
 
-<p align="center">
-  <img src="/media/task5-logout.png" width="600"/>
-</p>
+<img src="/media/task5-logout.png" width="600"/>
 
 **Heatmap**
 
-<p align="center">
-  <img src="/media/task5-heatmap.jpg" width="600"/>
-</p>
+<img src="/media/task5-heatmap.jpg" width="400"/>
 
 
 ## 1.3 Component design strategy
