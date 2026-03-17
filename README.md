@@ -205,7 +205,7 @@ Evaluate user ability to:
 
 The following screenshot from Maze shows the registered participants and their test execution status:
 
-![Maze Participants](/media/participants.png)
+<img src="/media/participants.png" width="400"/>
 
 #### Task 1 — Login
 
@@ -213,7 +213,7 @@ Users attempted to authenticate using their credentials.
 
 **Maze Evidence**
 
-<img src="/media/task1-login.png" width="600"/>
+<img src="/media/task1-login.png" width="500"/>
 
 **Heatmap**
 
@@ -225,7 +225,7 @@ Users initiated the DUA generation process from the main interface.
 
 **Maze Evidence**
 
-<img src="/media/task2-generate.png" width="600"/>
+<img src="/media/task2-generate.png" width="500"/>
 
 **Heatmap**
 
@@ -237,7 +237,7 @@ Users uploaded files and configured the generation process.
 
 **Maze Evidence**
 
-<img src="/media/task3-configure.png" width="600"/>
+<img src="/media/task3-configure.png" width="500"/>
 
 **Heatmap**
 
@@ -249,7 +249,7 @@ Users reviewed the generated DUA and validated its correctness.
 
 **Maze Evidence**
 
-<img src="/media/task4-review.png" width="600"/>
+<img src="/media/task4-review.png" width="500"/>
 
 **Heatmap**
 
@@ -261,7 +261,7 @@ Users ended their session through the logout action.
 
 **Maze Evidence**
 
-<img src="/media/task5-logout.png" width="600"/>
+<img src="/media/task5-logout.png" width="500"/>
 
 **Heatmap**
 
