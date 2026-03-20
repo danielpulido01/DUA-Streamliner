@@ -1,19 +1,59 @@
-apiClient.interceptors.response.use(
-  response => response,
-  error => {
-    if (error.response?.status === 401) {
-      sessionManager.handleUnauthorized();
-    }
-    return Promise.reject(error);
+import { ApiError } from "../models/app-error";
+import { errorHandler } from "../utils/error-handler";
+import { logger } from "../utils/logger";
+import { sessionManager } from "../state/sessionManager";
+
+type RequestMeta = {
+  method: string;
+  url: string;
+};
+
+type InterceptorOptions = {
+  handleUnauthorized?: boolean;
+};
+
+function isAuthBootstrapRequest(url: string) {
+  return /\/api\/auth\/(login|refresh|forgot-password|reset-password)$/i.test(url);
+}
+
+export function interceptHttpResponse(
+  response: Response,
+  request: RequestMeta,
+  options: InterceptorOptions = {},
+) {
+  const shouldHandleUnauthorized = options.handleUnauthorized ?? true;
+
+  if (response.status === 401 && shouldHandleUnauthorized && !isAuthBootstrapRequest(request.url)) {
+    logger.warn("401 intercepted. Clearing session.", {
+      method: request.method,
+      url: request.url,
+    });
+    sessionManager.handleUnauthorized();
   }
-);
 
-Responsibilities:
+  if (response.status === 403) {
+    const error = new ApiError("Access denied for this operation.", {
+      status: 403,
+      context: {
+        scope: "http-interceptors",
+        request: {
+          method: request.method,
+          url: request.url,
+          status: 403,
+        },
+      },
+    });
 
-intercept 401 unauthorized responses
+    errorHandler.handle(error, {
+      scope: "http-interceptors",
+      request: {
+        method: request.method,
+        url: request.url,
+        status: 403,
+      },
+      notifyUser: false,
+    });
+  }
 
-trigger session clear
-
-redirect to login when needed
-
-centralize forbidden/error behavior
+  return response;
+}

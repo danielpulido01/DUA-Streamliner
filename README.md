@@ -270,25 +270,26 @@ Users ended their session through the logout action.
 
 ## 1.3 Component design strategy
 
-Define la técnica y los principios de diseño de componentes del frontend, cómo se logra la reutilización de componentes, cómo se logra centralizar los estilos, el branding, la internacionalización y la responsividad.
-
 ### 1.3.1 Components
-The frontend will follow a layered component architecture to maximize reuse and maintain consistency across the application.
+The frontend follows an atomic design for component architecture.
 
 ### 1.3.1 Component Hierarchy
-For this project we will have 4 layers:
+[Components](src/components/components)
+
+For this project we will have 5 layers:
 ```
 src/
  ├ components/
- │   ├ primitives/
- │   ├ composites/
- │   ├ layouts/
- │   └ features/
+ │   ├ atoms/
+ │   ├ molecules/
+ │   ├ organisms/
+ │   ├ templates/
+ │   └ pages/
 ```
 
 ### 1.3.2 Component Categories
 
-#### Primitive Components
+#### [Atoms](src/components/Atoms)
 Reusable low-level UI components (no business logic)
 
 - Must be pure UI
@@ -320,7 +321,7 @@ Example usage:
 </Button>
 ```
 
-#### Composite Components
+#### [Molecules](src/components/molecules)
 Built from primitives
 
 - Combine primitives
@@ -329,24 +330,19 @@ Built from primitives
 - Data passed via props
 
 ```
-LoginForm
-FileUploadArea
-ProgressTracker
-DocumentPreview
-FileStatusTable
-ActivityList
+info-banner.tsx
 ```
 
 Example:
 ```
-LoginForm
- ├ Input(username)
- ├ PasswordInput
- ├ TokenInput
- └ Button(login)
+InfoBanner
+ ├ Alert
+ └ Button
 ```
 
-#### Layout Components
+#### [Organisms](src/components/organisms)
+
+#### [Templates](src/components/templates)
 Components responsible for page structure and navigation.
 
 - Must not contain business logic
@@ -369,7 +365,7 @@ DashboardLayout
  └ PageContent
 ```
 
-#### Feature Components
+#### [Pages](src/components/pages)
 Feature-specific components tied to a business process.
 
 - Coordinate business logic through hooks, which interact with services
@@ -390,13 +386,11 @@ features/
 
 ### 1.3.3 Component Reuse Strategy
 
-#### No Duplicated UI
 Before creating a new component developers must:
-1. Search in components/primitives
-2. Search in components/composites
+1. Search in [Atoms](src/components/atoms)
+2. Search in [Molecules](src/components/molecules)
 If similar component exists → extend it. How can I extend it? Agregar
 
-#### Props Driven Design
 Components must be configurable using props instead of duplication.
 
 ```
@@ -405,19 +399,8 @@ Components must be configurable using props instead of duplication.
 <Button variant="danger" />
 ```
 
-#### Business logic outside components
-All API calls must go through:
-Como es que los llaman los componentes? los componentes llaman al hook y el hook al service o cómo es?
-```
-services/
-```
-Example:
-```
-authService.ts
-generatorService.ts
-```
-
-Components use hooks.
+#### [Hooks](src/components/hooks)
+Components use hooks for business logic.
 Example:
 ```
 useLogin()
@@ -425,13 +408,15 @@ useUploadFiles()
 useGenerationProgress()
 ```
 
-### 1.3.4 Styling and Branding Centralization
-All visual styles must be centralized using design tokens.
+Hooks use [Services](src/services) for API calls:
 
-#### Tokens file
+Example:
 ```
-src/styles/tokens.ts
+generatorService.ts
 ```
+
+### 1.3.4 [Styles](src/components/styles)
+All visual styles must be centralized using design tokens in [Tokens](src/components/styles/tokens.ts)
 
 Example:
 ```
@@ -455,11 +440,9 @@ export const radius = {
 }
 ```
 
-#### Theme configuration
+#### [Theme](src/components/styles/theme.ts)
 Cómo hago para cambiar dark/light theme? Cómo agrego nuevo theme?
-```
-src/styles/theme.ts
-```
+
 Example:
 
 export const theme = {
@@ -491,14 +474,11 @@ Incorrect
 
 ### 1.3.5 Internationalization Strategy
 All text must be externalized.
-Como es que realmente esto funciona en el código? Cómo se cambia de idioma? Cómo agrego un nuevo idioma?
 
-#### Translation folder
-```
-src/i18n
- ├ en.json
- └ es.json
-```
+#### [i18n](src/components/i18n)
+Insert new languages in this folder:
+[es](src/components/i18n/en.json)
+[en](src/components/i18n/es.json)
 
 Example:
 ```JSON
@@ -523,6 +503,7 @@ Correct
 ```TypeScript
 <h1>{t("login.title")}</h1>
 ```
+
 #### Translation hook
 Developers must use:
 ```
@@ -535,12 +516,7 @@ const { t } = useTranslation()
 ```
 
 ### 1.3.6 Responsiveness Strategy
-Responsiveness must be centralized using breakpoint tokens.
-
-#### Breakpoints
-```
-styles/breakpoints.ts
-```
+Responsiveness must be centralized using breakpoint tokens in [breakpoints](src/components/styles/breakpoints.ts)
 
 Example:
 ```TypeScript
@@ -649,7 +625,7 @@ Tecnologías, técnicas y classes con su respectiva ubicación en la estructura 
   
   export type LoginRequest = z.infer<typeof loginRequestSchema>;
   ```
-3. Frontend sends credentials to backend via [authService.ts](src/services/authService.ts).
+3. Frontend sends credentials to backend via [authService.ts](src/auth/authService.ts).
   ```TypeScript
   import { apiClient } from "@/services/apiClient";
   import type { LoginRequest } from "../schemas/loginRequest.schema";
@@ -678,7 +654,7 @@ Tecnologías, técnicas y classes con su respectiva ubicación en la estructura 
    - Authenticated user profile
    - Permission set or role set
   
-  [useLogin.ts](src/hooks/useLogin.ts)
+  [useLogin.ts](src/components/hooks/useLogin.ts)
   ```TypeScript
   import { useState } from "react";
   import { authService } from "../services/authService";
@@ -723,7 +699,7 @@ Tecnologías, técnicas y classes con su respectiva ubicación en la estructura 
 ### 1.4.3 Authorization
 
 #### 1.4.3.1 Roles
-Roles are found in [roles.ts](src/policies/roles.ts)
+Roles are found in [roles.ts](src/auth/policies/roles.ts)
 
 | Code     | Description                                                                                                                |
 | -------- | -------------------------------------------------------------------------------------------------------------------------- |
@@ -733,7 +709,7 @@ Roles are found in [roles.ts](src/policies/roles.ts)
 | viewer   | Can access Home, view files, view activity, and monitor process status, but cannot generate or confirm DUAs                |
 
 #### 1.4.3.2 Permissions
-Permissions are found in [permissions.ts](src/policies/permissions.ts)
+Permissions are found in [permissions.ts](src/auth/policies/permissions.ts)
 
 **Permission Catalog**
 | Code                   | Description                                                        |
@@ -814,7 +790,7 @@ This project has three methods of routing protection, use depending on each rout
 Use this guard to prevent unauthenticated access to specific routes.
 
 Example usage:
-[AppRouter.tsx](/src/routes/AppRouter.tsx)
+[AppRouter.tsx](/src/AppRouter.tsx)
 ```TypeScript
   <AuthGuard>
     <DashboardLayout>
@@ -850,7 +826,6 @@ Example usage:
   ```
 
 #### 1.4.3.6 Usage
-Expandir en cómo funciona el permission hook\
 Developers must never write:
 ```TypeScript
 if (user.role === "admin")
@@ -994,7 +969,7 @@ For normal users, prefer friendly messages like:
     REVIEWER: "reviewer",
   } as const;
   ```
-2. Add permission definition in [permissions.ts](/src/policies/permissions.ts)
+1. Add permission definition in [permissions.ts](/src/policies/permissions.ts)
   ```TypeScript
   export const Permissions = {
     DUA_READ: "dua.read",
@@ -1016,7 +991,7 @@ For normal users, prefer friendly messages like:
   | "activity.read";
   ```
 
-3. Map policies to permissions in [accessPolicy.ts](/src/policies/accessPolicy.ts)
+1. Map policies to permissions in [accessPolicy.ts](/src/policies/accessPolicy.ts)
   ```TypeScript
   import { Permissions } from "./permissions";
 
@@ -1103,7 +1078,7 @@ Responsibilities:
 - clear sensitive in-memory data
 - redirect to login
 
-[useLogout.ts](/src/hooks/useLogout.ts)
+[useLogout.ts](/src/components/hooks/useLogout.ts)
 
 ### 1.4.8 Session Expiration
 Como es que pasa todo esto
@@ -1113,119 +1088,14 @@ When backend returns 401 Unauthorized:
 - user is redirected to login
 - user sees a session expired message
 
-### 1.4.9 Screen-Level Security Mapping
-Cambiar lo de responsible elements y rules por ejemplos reales de como aseguramos cada cosa en codigo
-#### Login screen
-
-Responsible elements:
-```
-src/features/auth/pages/LoginPage.tsx
-src/features/auth/components/LoginForm.tsx
-src/features/auth/hooks/useLogin.ts
-src/features/auth/services/authService.ts
-src/features/auth/schemas/loginRequest.schema.ts
-src/security/guards/GuestGuard.tsx
-```
-
-#### Home screen
-
-Responsible elements:
-```
-src/security/guards/AuthGuard.tsx
-src/security/hooks/useSession.ts
-src/security/hooks/usePermissions.ts
-```
-Rules:
-- requires authenticated session
-- must not render data until session is validated
-
-#### Configure Generator screen
-
-Responsible elements:
-```
-src/security/guards/AuthGuard.tsx
-src/security/guards/PermissionGuard.tsx
-src/security/policies/accessPolicy.ts
-```
-```TypeScript
-<PermissionGuard required={accessPolicy.canGenerateDua}>
-  <ConfigureGeneratorPage />
-</PermissionGuard>
-```
-
-Rules:
-- requires authenticated session
-- requires dua.generate and files.upload
-
-#### Progress screen
-
-Responsible elements:
-```
-src/security/guards/AuthGuard.tsx
-src/security/guards/PermissionGuard.tsx
-```
-Rules:
-- requires authenticated session
-- requires permission to read generation progress
-
-#### Preview screen
-
-Responsible elements:
-```
-src/security/guards/AuthGuard.tsx
-src/security/guards/PermissionGuard.tsx
-```
-Rules:
-- requires authenticated session
-- requires dua.read
-- download action requires dua.download
-
-#### Logout flow
-
-Responsible elements:
-```
-src/features/auth/components/LogoutButton.tsx
-src/features/auth/hooks/useLogout.ts
-src/features/auth/services/authService.ts
-src/security/providers/SessionProvider.tsx 
-```
 ## 1.5 Layered design
 
 The frontend follows a five-layer architecture where each layer has a distinct responsibility and interactions flow strictly downward through hooks and services. This keeps the codebase maintainable and testable.
 
 **Architecture diagram:**
 
-```
-  +------------------------------------------+
-  |  Presentation Layer                      |
-  |  Components, Pages, Features             |
-  +--------+-------------------------------+
-           | calls
-           V
-  +------------------------------------------+
-  |  Application Layer                       |
-  |  Hooks (useLogin, usePermissions, etc.)  |
-  +--------+-------------------------------+
-           | validates with
-           V
-  +------------------------------------------+
-  |  Domain Logic Layer                      |
-  |  Zod Schemas, Policies, Permissions     |
-  +--------+-------------------------------+
-           | calls
-           V
-  +------------------------------------------+
-  |  Services Layer                          |
-  |  apiClient, authService, etc.           |
-  +--------+-------------------------------+
-           | HTTP/REST
-           V
-       Backend / External APIs
+![Frontend Layers](<media/Dua - Frontend Layers.png>)
 
-
-  Infrastructure Layer (Session, i18n, Styles, Utils)
-  Shared context across all layers above
-```
 
 **Layer 1 — Presentation:** UI components (primitives, composites, layouts, feature pages) render data and capture user input. They never call services or APIs directly. Routing orchestration (AppRouter) and route guards (AuthGuard, GuestGuard, PermissionGuard) protect navigation based on authentication and permissions.
 
@@ -1244,7 +1114,7 @@ The frontend follows a five-layer architecture where each layer has a distinct r
 | `src/components/` | Layer 1 | Primitives, composites, layouts |
 | `src/auth/guards/` | Layer 1 | Routing guards (AuthGuard, GuestGuard, PermissionGuard) |
 | `src/features/` | Layer 1, 2, 3 | Feature pages, hooks, schemas |
-| `src/hooks/` | Layer 2, 5 | Shared hooks (useSession, usePermissions) |
+| `src/components/hooks/` | Layer 2, 5 | Shared hooks (useSession, usePermissions) |
 | `src/services/` | Layer 4 | apiClient, authService, generatorService |
 | `src/policies/` | Layer 3 | Roles, permissions, access policies |
 | `src/schemas/` | Layer 3 | Zod validation schemas |

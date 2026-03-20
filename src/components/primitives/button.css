@@ -1,7 +1,0 @@
-/* src/components/primmitives/button.css */
-.btn {
-  background: var(--color-primary);
-  color: var(--color-text);
-  border-radius: var(--radius-md);
-  padding: var(--space-md);
-}

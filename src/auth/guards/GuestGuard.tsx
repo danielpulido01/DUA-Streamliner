@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Navigate } from "react-router-dom";
-import { useSession } from "../../hooks/useSession";
+import { useSession } from "../../components/hooks/useSession";
 import { routes } from "../../routes/routeConfig";
 
 type SessionLike = {

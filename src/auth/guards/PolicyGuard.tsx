@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Navigate } from "react-router-dom";
-import { usePermissions } from "../../hooks/usePermissions";
+import { usePermissions } from "../../components/hooks/usePermissions";
 import { routes } from "../../routes/routeConfig";
 
 type PolicyGuardProps = {
