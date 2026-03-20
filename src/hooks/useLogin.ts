@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { authService } from "../services/authService";
 import { loginRequestSchema, type LoginRequest } from "../schemas/loginRequest.schema";
-import { useSession } from "@/hooks/useSession";
+import { useSession } from "./hooks/useSession";
 
 export function useLogin() {
   const { setSession } = useSession();
