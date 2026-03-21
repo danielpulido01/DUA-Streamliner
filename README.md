@@ -1144,7 +1144,12 @@ User uploads files → `ConfigureGeneratorPage` calls `useUploadFiles()` hook �
 
 ## 1.6  Design patterns
 
-Diseño de classes con su respectiva ubicación en la estructura del proyecto, donde sea necesario aplicar patrones de diseño orientado a objetos, como por ejemplo: seguridad, refrescado de UI, recepción de notificaciones, almacenamiento de estados, llamadas a api, operaciones asíncronas, invalidación de sesiones, programación por eventos, creación de objetos. 
+- Use Builder Pattern and Strategy Pattern to create and compose heterogeneous DUA document processors (docx, xlsx, pdf, jpg, png) from application hooks, centralizing format-processing abstractions and keeping UI orchestration in [src/components/hooks](src/components/hooks).
+- Use Observer Pattern so long-running DUA generation progress is pushed reactively from subscribed hook state to the progress view without blocking the UI, using the application hook layer in [src/components/hooks](src/components/hooks).
+- Singleton for shared infrastructure instances: api client registry, auth service instance, logger, and error handler; for session state, use one root-mounted SessionProvider instance by architectural convention as the single source of truth, avoiding duplicated ownership with AuthProvider in [src/state/SessionProvider.tsx](src/state/SessionProvider.tsx) and [src/AppProviders.tsx](src/AppProviders.tsx).
+- Use Strategy Pattern in token/session protection so unauthorized handling is interchangeable inside interceptors, preserving the current HTTP-only cookie flow while allowing future mechanisms without changing consumers in [src/services/httpInterceptors.ts](src/services/httpInterceptors.ts).
+- Use Facade Pattern to expose a unified service access surface from application hooks to auth and HTTP operations, reducing multi-client coupling in [src/components/hooks](src/components/hooks), [src/auth/authService.ts](src/auth/authService.ts), and [src/services/client.ts](src/services/client.ts).
+- Use Adapter Pattern for Word document field replacement by format type (ParagraphAdapter, TableAdapter, LabelAdapter, AmountAdapter) in the backend document-generation service, since this concern is not currently implemented in frontend services.
 
 ## 1.7 src folder
 
