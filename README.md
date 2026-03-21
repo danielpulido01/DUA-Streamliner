@@ -140,7 +140,7 @@ Shows a message to the user verifying the session is closed
 
 ### 1.2.3 UX Test Results
 
-A usability test was conducted using Maze to validate the proposed wireframes of the DUA Streamliner system. The test was shared remotely via URL with 3 participants.
+A usability test was conducted using Maze to validate the proposed wireframes of the DUA Streamliner system. The test was shared remotely via URL with 4 participants.
 
 #### Test Objective
 Evaluate user ability to:
@@ -161,10 +161,10 @@ Evaluate user ability to:
 | Task 5 — Logout | User ends the session |
 
 #### Participants
-- Lazaro Gonzalez (Student)
+- Lazaro González (Student)
 - Jimena Sanchez (Student)
 - Juan Diego Arce (Student)
-- Josue Venegas (Student)
+- Josué Venegas (Student)
 
 #### Key Metrics (Maze)
 
@@ -389,7 +389,7 @@ features/
 Before creating a new component developers must:
 1. Search in [Atoms](src/components/atoms)
 2. Search in [Molecules](src/components/molecules)
-If similar component exists → extend it. How can I extend it? Agregar
+If a similar component exists, extend it by adding props, variants, or composition instead of duplicating code.
 
 Components must be configurable using props instead of duplication.
 
@@ -566,6 +566,7 @@ components/primitives/Button/Button.test.tsx
 ```
 
 Testing rules:
+
 Test:
 - Rendering
 - Props
@@ -588,21 +589,75 @@ Required flows:
 - Logout
 
 #### Performance Guidelines
-Agregar ejemplos de código de esto
 Developers must:
 - Use React.memo for heavy components
 - Use lazy() for feature modules
 - Avoid unnecessary re-renders
 
-Example:
-```
-lazy load:
-generator module
-preview module
+Examples:
+
+```tsx
+import { memo } from "react";
+
+type StatCardProps = { title: string; value: string };
+
+export const StatCard = memo(function StatCard({ title, value }: StatCardProps) {
+  return (
+    <article>
+      <h3>{title}</h3>
+      <p>{value}</p>
+    </article>
+  );
+});
 ```
 
-## 1.4 Security
-Tecnologías, técnicas y classes con su respectiva ubicación en la estructura del proyecto responsables de la autenticación y la autorización de permisos y sesiones. 
+```tsx
+import { lazy, Suspense } from "react";
+
+const GeneratorPage = lazy(() => import("@/features/dua-generator/ConfigureGeneratorPage"));
+const PreviewPage = lazy(() => import("@/features/dua-generator/PreviewPage"));
+
+export function AppRoutes() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <GeneratorPage />
+      <PreviewPage />
+    </Suspense>
+  );
+}
+```
+
+```tsx
+import { useCallback, useMemo, useState } from "react";
+
+type FileItem = { id: string; name: string; status: "ok" | "error" };
+
+export function FileList({ files }: { files: FileItem[] }) {
+  const [query, setQuery] = useState("");
+
+  const visibleFiles = useMemo(
+    () => files.filter((f) => f.name.toLowerCase().includes(query.toLowerCase())),
+    [files, query]
+  );
+
+  const onSearchChange = useCallback((value: string) => {
+    setQuery(value);
+  }, []);
+
+  return (
+    <section>
+      <input value={query} onChange={(e) => onSearchChange(e.target.value)} />
+      <ul>
+        {visibleFiles.map((file) => (
+          <li key={file.id}>{file.name}</li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+```
+
+## 1.4 Security 
 
 ### 1.4.1 Technologies
 - React Router
@@ -692,8 +747,21 @@ Tecnologías, técnicas y classes con su respectiva ubicación en la estructura 
     return { login, isLoading, error };
   }
   ```
-7. Frontend stores user and permission metadata in memory through SessionProvider.
-   Pendiente definir bien esta parte de la session, ya hay archivos con teoría de lo que debería decir, ajustar a ejemplos concretos de código
+7. Frontend normalizes and stores the authenticated session (user, roles, permissions) through `SessionProvider` and `sessionManager`.
+  ```TypeScript
+  // Inside useLogin after successful authentication
+  const session = await authService.login(parsed.data);
+  setSession(session); // SessionProvider delegates to sessionManager.setSession
+
+  // SessionProvider maps session data for app-wide access
+  const value = {
+    session,
+    user: session?.user ?? null,
+    roles: session?.roles ?? [],
+    permissions: session?.permissions ?? [],
+    isAuthenticated: session?.isAuthenticated ?? false,
+  };
+  ```
 8. Frontend redirects to the Home screen.
 
 ### 1.4.3 Authorization
@@ -957,10 +1025,14 @@ Do not expose raw permission codes to end users unless that is intentional for a
 For normal users, prefer friendly messages like:
 - "You do not have access to generate DUAs."
 - "Contact an administrator if you need this action enabled."
+
+Example:
+```tsx
 {hasPermission("dua.generate") && <StartGenerationButton />}
 ```
 
 **To add additional roles/permissions:**
+
 1. Add role definition in [roles.ts](/src/policies/roles.ts)
   ```TypeScript
   export const Roles = {
@@ -969,7 +1041,7 @@ For normal users, prefer friendly messages like:
     REVIEWER: "reviewer",
   } as const;
   ```
-1. Add permission definition in [permissions.ts](/src/policies/permissions.ts)
+2. Add permission definition in [permissions.ts](/src/policies/permissions.ts)
   ```TypeScript
   export const Permissions = {
     DUA_READ: "dua.read",
@@ -991,7 +1063,7 @@ For normal users, prefer friendly messages like:
   | "activity.read";
   ```
 
-1. Map policies to permissions in [accessPolicy.ts](/src/policies/accessPolicy.ts)
+3. Map policies to permissions in [accessPolicy.ts](/src/policies/accessPolicy.ts)
   ```TypeScript
   import { Permissions } from "./permissions";
 
@@ -1004,46 +1076,6 @@ For normal users, prefer friendly messages like:
 
 Permissions should be added in the backend as well in order for this to work
 
-### 1.4.4 Routing Protection
-This project has three methods of routing protection, use depending on each routes context
-
-#### 1.4.4.1 Auth Guard
-Use this guard to prevent unathenticated access
-
-Example usage:
-[AppRouter.tsx](/src/routes/AppRouter.tsx)
-```TypeScript
-  <AuthGuard>
-    <DashboardLayout>
-      <HomePage />
-    </DashboardLayout>
-  </AuthGuard>
-```
-
-#### 1.4.4.1 Guest Guard
-Use this guard to prevent authenticated users accessing unauthenticated sites
-
-Example usage:
-[AppRouter.tsx](/src/routes/AppRouter.tsx)
-```TypeScript
-  <GuestGuard>
-    <LoginPage />
-  </GuestGuard>
-```
-
-#### 1.4.4.1 Permission Guard
-Use this guard when an action requires an access policy to prevent unauthorized accesss
-
-Example usage:
-[AppRouter.tsx](/src/routes/AppRouter.tsx)
-  ```TypeScript
-  <AuthGuard>
-    <PermissionGuard required={accessPolicy.canGenerateDua}>
-      <ConfigureGeneratorPage />
-    </PermissionGuard>
-  </AuthGuard>
-  ```
-
 ### 1.4.5 API Communication
 
 #### Centralized API Client
@@ -1053,7 +1085,6 @@ Example usage:
 [httpInterceptors.ts](/src/services/httpInterceptors.ts)
 
 ### 1.4.6 Storage Rules
-Agregar ejemplos y cómo es que nos aseguramos de no guardar passwords, tokens, etc
 **Allowed storage**
 - UI preferences
 - selected language
@@ -1067,9 +1098,25 @@ Agregar ejemplos y cómo es que nos aseguramos de no guardar passwords, tokens, 
 - one-time tokens
 - raw permission payloads if sensitive
 
-**Preferred storage model:**
+**Preferred storage model**
 - backend session stored in secure, HTTP-only, same-site cookies
 - frontend session state kept in memory through SessionProvider
+
+**Examples**
+```ts
+// Allowed: non-sensitive preferences
+localStorage.setItem("theme", "dark");
+localStorage.setItem("language", "en");
+
+// Forbidden: secrets
+// localStorage.setItem("accessToken", token);
+// localStorage.setItem("password", password);
+```
+
+**Enforcement**
+- Keep authentication credentials in backend-managed secure cookies only.
+- Clear in-memory session data on logout and on 401 responses.
+- Review pull requests for any usage of `localStorage` or `sessionStorage` with sensitive keys.
 
 ### 1.4.7 Logout
 Responsibilities:
@@ -1081,7 +1128,7 @@ Responsibilities:
 [useLogout.ts](/src/components/hooks/useLogout.ts)
 
 ### 1.4.8 Session Expiration
-Como es que pasa todo esto
+
 When backend returns 401 Unauthorized:
 - interceptor must detect it
 - sessionManager clears session state
@@ -1153,52 +1200,110 @@ User uploads files → `ConfigureGeneratorPage` calls `useUploadFiles()` hook �
 
 ## 1.7 src folder
 
-un folder en /src que contiene el scaffold del proyecto, el cual se genera a partir de toda la especificación de los puntos del 1.1 al 1.6.
+The `/src` folder contains the application scaffold organized by architectural layers and functional domains, following the 5-layer architecture specified in sections 1.1 to 1.6.
+
 ```
 src
- ├ components
- │   ├ primitives
- │   │   ├ Button
- │   │   ├ Input
- │   │   ├ Modal
- │   │   └ ProgressBar
- │   │
- │   ├ composites
- │   │   ├ LoginForm
- │   │   ├ FileUploadArea
- │   │   ├ FileStatusTable
- │   │   └ ActivityList
- │   │
- │   └ layouts
- │       ├ AuthLayout
- │       └ DashboardLayout
+ ├ AppProviders.tsx
+ ├ main.tsx
  │
- ├ features
- │   ├ auth
- │   ├ dua-generator
- │   └ dashboard
- │
- ├ hooks
- │   ├ useAuth
- │   ├ useUpload
- │   └ useProgress
- │
- ├ services
- │   ├ apiClient.ts
+ ├ auth/
+ │   ├ auth-schemas.ts
+ │   ├ AuthProvider.tsx
  │   ├ authService.ts
- │   └ generatorService.ts
+ │   ├ guards/
+ │   │   ├ AuthGuard.tsx
+ │   │   ├ GuestGuard.tsx
+ │   │   └ PolicyGuard.tsx
+ │   └ policies/
+ │       ├ accessPolicy.ts
+ │       ├ permissions.ts
+ │       ├ rolePermissions.ts
+ │       └ roles.ts
  │
- ├ i18n
- │   ├ en.json
- │   └ es.json
+ ├ components/
+ │   ├ atoms/
+ │   │   ├ ImageWithFallback.tsx
+ │   │   ├ language-switcher.tsx
+ │   │   ├ theme-switcher.tsx
+ │   │   └ ui/
+ │   │       ├ accordion.tsx
+ │   │       ├ alert.tsx
+ │   │       ├ button.tsx
+ │   │       ├ dialog.tsx
+ │   │       └ ... (20+ shadcn/ui components)
+ │   │
+ │   ├ molecules/
+ │   │   ├ app-error-boundary.tsx
+ │   │   └ info-banner.tsx
+ │   │
+ │   ├ organisms/
+ │   │   ├ homePageLayout.tsx
+ │   │   └ homePageLayout.css
+ │   │
+ │   ├ hooks/
+ │   │   ├ useLogin.ts
+ │   │   ├ useLogout.ts
+ │   │   ├ usePermissions.ts
+ │   │   ├ usePolicies.ts
+ │   │   ├ useSession.ts
+ │   │   └ useTheme.ts
+ │   │
+ │   ├ i18n/
+ │   │   ├ config.ts
+ │   │   ├ I18nProvider.tsx
+ │   │   ├ en.json
+ │   │   └ es.json
+ │   │
+ │   └ styles/
+ │       ├ breakpoints.ts
+ │       ├ globals.css
+ │       ├ theme.ts
+ │       ├ ThemeProvider.tsx
+ │       └ tokens.ts
  │
- ├ styles
- │   ├ theme.ts
- │   ├ tokens.ts
- │   └ globals.css
+ ├ models/
+ │   ├ app-error.ts
+ │   ├ common-schemas.ts
+ │   └ loginRequest-schema.ts
  │
- └ utils
+ ├ routes/
+ │   ├ AppRouter.tsx
+ │   └ routeConfig.ts
+ │
+ ├ services/
+ │   ├ client.ts
+ │   └ httpInterceptors.ts
+ │
+ ├ state/
+ │   ├ session.types.ts
+ │   ├ sessionManager.ts
+ │   ├ SessionProvider.tsx
+ │   └ sessionStore.ts
+ │
+ └ utils/
+     ├ error-handler.ts
+     ├ logger.ts
+     ├ schemaValidator.ts
+     └ sessionManager.ts
 ```
+
+**Mapping to Layers:**
+
+| Folder | Layer | Responsibility |
+|--------|-------|-----------------|
+| `auth/` | Layer 1, 3, 4 | Authentication, authorization, guards, policies |
+| `components/atoms/` | Layer 1 | Primitive UI components |
+| `components/molecules/` | Layer 1 | Composite UI components |
+| `components/organisms/` | Layer 1 | Layout/page templates |
+| `components/hooks/` | Layer 2, 5 | Shared hooks, application orchestration |
+| `components/i18n/` | Layer 5 | Internationalization |
+| `components/styles/` | Layer 5 | Design tokens, theme, globals |
+| `models/` | Layer 3 | Domain schemas (Zod), types |
+| `routes/` | Layer 1 | Routing and navigation guards |
+| `services/` | Layer 4 | API client, HTTP interceptors |
+| `state/` | Layer 5 | Session management, context |
+| `utils/` | Layer 5 | Shared utilities, helpers, logging |
 
 # 2. Backend Design
 
