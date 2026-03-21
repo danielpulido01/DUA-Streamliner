@@ -273,8 +273,8 @@ Users ended their session through the logout action.
 ### 1.3.1 Components
 The frontend follows an atomic design for component architecture.
 
-### 1.3.1 Component Hierarchy
-[Components](src/components/components)
+### 1.3.2 Component Hierarchy
+[Components](src/components)
 
 For this project we will have 5 layers:
 ```
@@ -287,9 +287,9 @@ src/
  │   └ pages/
 ```
 
-### 1.3.2 Component Categories
+### 1.3.3 Component Categories
 
-#### [Atoms](src/components/Atoms)
+#### [Atoms](src/components/atoms)
 Reusable low-level UI components (no business logic)
 
 - Must be pure UI
@@ -342,7 +342,7 @@ InfoBanner
 
 #### [Organisms](src/components/organisms)
 
-#### [Templates](src/components/templates)
+#### [Templates](src/components/organisms)
 Components responsible for page structure and navigation.
 
 - Must not contain business logic
@@ -365,7 +365,7 @@ DashboardLayout
  └ PageContent
 ```
 
-#### [Pages](src/components/pages)
+#### [Pages](src/routes)
 Feature-specific components tied to a business process.
 
 - Coordinate business logic through hooks, which interact with services
@@ -384,7 +384,7 @@ features/
      └ HomePage.tsx
 ```
 
-### 1.3.3 Component Reuse Strategy
+### 1.3.4 Component Reuse Strategy
 
 Before creating a new component developers must:
 1. Search in [Atoms](src/components/atoms)
@@ -415,7 +415,7 @@ Example:
 generatorService.ts
 ```
 
-### 1.3.4 [Styles](src/components/styles)
+### 1.3.5 [Styles](src/components/styles)
 All visual styles must be centralized using design tokens in [Tokens](src/components/styles/tokens.ts)
 
 Example:
@@ -441,7 +441,7 @@ export const radius = {
 ```
 
 #### [Theme](src/components/styles/theme.ts)
-Cómo hago para cambiar dark/light theme? Cómo agrego nuevo theme?
+How do I switch dark/light mode? How do I add a new theme?
 
 Example:
 
@@ -472,13 +472,13 @@ Incorrect
 <Button style={{ background: "#0052CC" }} />
 ```
 
-### 1.3.5 Internationalization Strategy
+### 1.3.6 Internationalization Strategy
 All text must be externalized.
 
 #### [i18n](src/components/i18n)
 Insert new languages in this folder:
-[es](src/components/i18n/en.json)
-[en](src/components/i18n/es.json)
+[es](src/components/i18n/es.json)
+[en](src/components/i18n/en.json)
 
 Example:
 ```JSON
@@ -515,7 +515,7 @@ Example:
 const { t } = useTranslation()
 ```
 
-### 1.3.6 Responsiveness Strategy
+### 1.3.7 Responsiveness Strategy
 Responsiveness must be centralized using breakpoint tokens in [breakpoints](src/components/styles/breakpoints.ts)
 
 Example:
@@ -556,7 +556,7 @@ Responsive behavior:
 | Tablet | 2 column grid |
 | Desktop | 3 column grid |
 
-### 1.3.7 Testing Requirements for Components
+### 1.3.8 Testing Requirements for Components
 Each component must include tests.
 
 #### Unit tests
@@ -819,7 +819,7 @@ Permissions are found in [permissions.ts](src/auth/policies/permissions.ts)
 
 
 #### 1.4.3.3 Role-Permission Mapping
-Role to permissions mapping is found in [rolePermissions.ts](src/policies/rolePermissions.ts)
+Role to permissions mapping is found in [rolePermissions.ts](src/auth/policies/rolePermissions.ts)
 
 | Role     | Permissions                                                                                                                                                                                                                                         |
 | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -830,7 +830,7 @@ Role to permissions mapping is found in [rolePermissions.ts](src/policies/rolePe
 
 
 #### 1.4.3.4 Access Policies
-Access Policies are found in [accessPolicy.ts](src/policies/accessPolicy.ts)
+Access Policies are found in [accessPolicy.ts](src/auth/policies/accessPolicy.ts)
 
 | Policy                  | Required Permissions                                       | Description                                           |
 | ----------------------- | ---------------------------------------------------------- | ----------------------------------------------------- |
@@ -858,7 +858,7 @@ This project has three methods of routing protection, use depending on each rout
 Use this guard to prevent unauthenticated access to specific routes.
 
 Example usage:
-[AppRouter.tsx](/src/AppRouter.tsx)
+[AppRouter.tsx](/src/routes/AppRouter.tsx)
 ```TypeScript
   <AuthGuard>
     <DashboardLayout>
@@ -1033,7 +1033,7 @@ Example:
 
 **To add additional roles/permissions:**
 
-1. Add role definition in [roles.ts](/src/policies/roles.ts)
+1. Add role definition in [roles.ts](/src/auth/policies/roles.ts)
   ```TypeScript
   export const Roles = {
     ADMIN: "admin",
@@ -1041,7 +1041,7 @@ Example:
     REVIEWER: "reviewer",
   } as const;
   ```
-2. Add permission definition in [permissions.ts](/src/policies/permissions.ts)
+2. Add permission definition in [permissions.ts](/src/auth/policies/permissions.ts)
   ```TypeScript
   export const Permissions = {
     DUA_READ: "dua.read",
@@ -1052,7 +1052,7 @@ Example:
     ACTIVITY_READ: "activity.read",
   } as const;
   ```
-  and in [session.types.ts](/src/types/session.types.ts)
+  and in [session.types.ts](/src/state/session.types.ts)
   ```TypeScript
   export type PermissionCode =
   | "dua.read"
@@ -1063,7 +1063,7 @@ Example:
   | "activity.read";
   ```
 
-3. Map policies to permissions in [accessPolicy.ts](/src/policies/accessPolicy.ts)
+3. Map policies to permissions in [accessPolicy.ts](/src/auth/policies/accessPolicy.ts)
   ```TypeScript
   import { Permissions } from "./permissions";
 
@@ -1076,15 +1076,15 @@ Example:
 
 Permissions should be added in the backend as well in order for this to work
 
-### 1.4.5 API Communication
+### 1.4.4 API Communication
 
 #### Centralized API Client
-[apiClient.ts](/src/services/apiClient.ts)
+[client.ts](/src/services/client.ts)
 
 #### HTTP Interceptors
 [httpInterceptors.ts](/src/services/httpInterceptors.ts)
 
-### 1.4.6 Storage Rules
+### 1.4.5 Storage Rules
 **Allowed storage**
 - UI preferences
 - selected language
@@ -1118,7 +1118,7 @@ localStorage.setItem("language", "en");
 - Clear in-memory session data on logout and on 401 responses.
 - Review pull requests for any usage of `localStorage` or `sessionStorage` with sensitive keys.
 
-### 1.4.7 Logout
+### 1.4.6 Logout
 Responsibilities:
 - call backend logout endpoint
 - clear session provider state
@@ -1127,7 +1127,7 @@ Responsibilities:
 
 [useLogout.ts](/src/components/hooks/useLogout.ts)
 
-### 1.4.8 Session Expiration
+### 1.4.7 Session Expiration
 
 When backend returns 401 Unauthorized:
 - interceptor must detect it
@@ -1137,22 +1137,22 @@ When backend returns 401 Unauthorized:
 
 ## 1.5 Layered design
 
-The frontend follows a five-layer architecture where each layer has a distinct responsibility and interactions flow strictly downward through hooks and services. This keeps the codebase maintainable and testable.
+The frontend uses a five-layer architecture with clear responsibilities and downward-only dependencies through hooks and services.
 
 **Architecture diagram:**
 
 ![Frontend Layers](<media/Dua - Frontend Layers.png>)
 
 
-**Layer 1 — Presentation:** UI components (primitives, composites, layouts, feature pages) render data and capture user input. They never call services or APIs directly. Routing orchestration (AppRouter) and route guards (AuthGuard, GuestGuard, PermissionGuard) protect navigation based on authentication and permissions.
+**Layer 1 — Presentation:** UI components (primitives, composites, layouts, feature pages) render data and capture input. They do not call APIs directly. AppRouter and route guards protect navigation.
 
-**Layer 2 — Application:** Hooks orchestrate logic by coordinating validation, service calls, and state updates. Each hook flows: validate input → call service → update infrastructure (session, permissions).
+**Layer 2 — Application:** Hooks orchestrate validation, service calls, and state updates. Standard flow: validate input -> call service -> update infrastructure (session, permissions).
 
-**Layer 3 — Domain Logic:** Zod schemas validate all user input. Permission checks happen via `usePermissions()` hook, never with direct role comparisons. Policies and constants define permissions and roles.
+**Layer 3 — Domain Logic:** Zod schemas validate input. Permission checks use `usePermissions()`, not direct role comparisons. Policies define roles and permissions.
 
-**Layer 4 — Services:** `apiClient` and typed service classes (`authService`, `generatorService`) handle all backend communication. HTTP interceptors (`httpInterceptors.ts`) manage cross-cutting concerns like automatic session validation and 401 redirects. Services are stateless — they return data or throw errors.
+**Layer 4 — Services:** `apiClient` and typed services (`authService`, `generatorService`) handle backend communication. `httpInterceptors.ts` handles cross-cutting concerns (session validation, 401). Services are stateless.
 
-**Layer 5 — Infrastructure:** Shared across all layers—`SessionProvider` (session state), design tokens (colors, spacing), i18n (translations), observability (Azure Insights), and utilities.
+**Layer 5 — Infrastructure:** Shared foundation: `SessionProvider`, design tokens, i18n, observability, and utilities.
 
 **Folder mapping:**
 
@@ -1179,17 +1179,17 @@ The frontend follows a five-layer architecture where each layer has a distinct r
 - Services can only use Infrastructure.
 - **No layer may call upward.**
 
-Violations: primitive components importing services, services calling `useState`, feature pages calling `fetch` directly, hooks comparing `user.role === "admin"` instead of using `usePermissions()`.
+Common violations: primitive components importing services, services using React state, feature pages calling `fetch` directly, hooks checking `user.role === "admin"` instead of `usePermissions()`.
 
 **Example: Login flow**
 
-User submits credentials → `LoginForm` calls `useLogin()` hook → hook validates with `loginRequestSchema` → calls `authService.login()` → `apiClient` sends request with secure cookies → backend returns session → hook calls `setSession()` → `SessionProvider` stores user + permissions → router redirects to Home.
+`LoginForm` -> `useLogin()` -> `loginRequestSchema` validation -> `authService.login()` -> `apiClient` request -> backend session -> `setSession()` -> `SessionProvider` update -> redirect to Home.
 
 **Example: DUA generation flow**
 
-User uploads files → `ConfigureGeneratorPage` calls `useUploadFiles()` hook → hook checks `hasPermission("dua.generate")` via infrastructure → validates with `uploadConfigSchema` → calls `generatorService.startGeneration()` → `apiClient` sends multipart upload → returns job ID → router navigates to `ProgressPage` → `useGenerationProgress()` polls for updates → when done, retrieves preview via service → `PreviewPage` renders result.
+`ConfigureGeneratorPage` -> `useUploadFiles()` -> permission check (`dua.generate`) -> `uploadConfigSchema` validation -> `generatorService.startGeneration()` -> multipart request -> job ID -> `ProgressPage` -> `useGenerationProgress()` polling -> preview retrieval -> `PreviewPage` render.
 
-## 1.6  Design patterns
+## 1.6 Design patterns
 
 - Use Builder Pattern and Strategy Pattern to create and compose heterogeneous DUA document processors (docx, xlsx, pdf, jpg, png) from application hooks, centralizing format-processing abstractions and keeping UI orchestration in [src/components/hooks](src/components/hooks).
   ```ts
