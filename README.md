@@ -1192,11 +1192,58 @@ User uploads files → `ConfigureGeneratorPage` calls `useUploadFiles()` hook �
 ## 1.6  Design patterns
 
 - Use Builder Pattern and Strategy Pattern to create and compose heterogeneous DUA document processors (docx, xlsx, pdf, jpg, png) from application hooks, centralizing format-processing abstractions and keeping UI orchestration in [src/components/hooks](src/components/hooks).
+  ```ts
+  interface ProcessorStrategy {
+    process(file: File): Promise<Record<string, string>>;
+  }
+
+  class ProcessorBuilder {
+    constructor(private strategy: ProcessorStrategy) {}
+    async run(file: File) { return this.strategy.process(file); }
+  }
+  ```
+
 - Use Observer Pattern so long-running DUA generation progress is pushed reactively from subscribed hook state to the progress view without blocking the UI, using the application hook layer in [src/components/hooks](src/components/hooks).
+  ```ts
+  const unsubscribe = generationStore.subscribe((state) => {
+    setProgress(state.percentage);
+  });
+  // call unsubscribe() on unmount
+  ```
+
 - Singleton for shared infrastructure instances: api client registry, auth service instance, logger, and error handler; for session state, use one root-mounted SessionProvider instance by architectural convention as the single source of truth, avoiding duplicated ownership with AuthProvider in [src/state/SessionProvider.tsx](src/state/SessionProvider.tsx) and [src/AppProviders.tsx](src/AppProviders.tsx).
+  ```ts
+  class Logger {
+    private static instance: Logger;
+    static getInstance() { return this.instance ??= new Logger(); }
+    info(message: string) { console.log(message); }
+  }
+  export const logger = Logger.getInstance();
+  ```
+
 - Use Strategy Pattern in token/session protection so unauthorized handling is interchangeable inside interceptors, preserving the current HTTP-only cookie flow while allowing future mechanisms without changing consumers in [src/services/httpInterceptors.ts](src/services/httpInterceptors.ts).
+  ```ts
+  interface UnauthorizedStrategy { handle(): void; }
+  class RedirectToLogin implements UnauthorizedStrategy {
+    handle() { sessionManager.handleUnauthorized(); }
+  }
+  ```
+
 - Use Facade Pattern to expose a unified service access surface from application hooks to auth and HTTP operations, reducing multi-client coupling in [src/components/hooks](src/components/hooks), [src/auth/authService.ts](src/auth/authService.ts), and [src/services/client.ts](src/services/client.ts).
+  ```ts
+  export const authFacade = {
+    login: (payload: LoginRequest) => authService.login(payload),
+    logout: () => authService.logout(),
+    me: () => authService.getCurrentSession(),
+  };
+  ```
+
 - Use Adapter Pattern for Word document field replacement by format type (ParagraphAdapter, TableAdapter, LabelAdapter, AmountAdapter) in the backend document-generation service, since this concern is not currently implemented in frontend services.
+  ```ts
+  interface FieldAdapter { extract(input: unknown): Record<string, string>; }
+  class ParagraphAdapter implements FieldAdapter { extract(input) { return {}; } }
+  class TableAdapter implements FieldAdapter { extract(input) { return {}; } }
+  ```
 
 ## 1.7 src folder
 
@@ -1287,23 +1334,6 @@ src
      ├ schemaValidator.ts
      └ sessionManager.ts
 ```
-
-**Mapping to Layers:**
-
-| Folder | Layer | Responsibility |
-|--------|-------|-----------------|
-| `auth/` | Layer 1, 3, 4 | Authentication, authorization, guards, policies |
-| `components/atoms/` | Layer 1 | Primitive UI components |
-| `components/molecules/` | Layer 1 | Composite UI components |
-| `components/organisms/` | Layer 1 | Layout/page templates |
-| `components/hooks/` | Layer 2, 5 | Shared hooks, application orchestration |
-| `components/i18n/` | Layer 5 | Internationalization |
-| `components/styles/` | Layer 5 | Design tokens, theme, globals |
-| `models/` | Layer 3 | Domain schemas (Zod), types |
-| `routes/` | Layer 1 | Routing and navigation guards |
-| `services/` | Layer 4 | API client, HTTP interceptors |
-| `state/` | Layer 5 | Session management, context |
-| `utils/` | Layer 5 | Shared utilities, helpers, logging |
 
 # 2. Backend Design
 
