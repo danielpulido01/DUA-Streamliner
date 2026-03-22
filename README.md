@@ -1158,18 +1158,21 @@ The frontend uses a five-layer architecture with clear responsibilities and down
 
 | Folder | Layers | Purpose |
 |--------|--------|---------|
-| `src/components/` | Layer 1 | Primitives, composites, layouts |
-| `src/auth/guards/` | Layer 1 | Routing guards (AuthGuard, GuestGuard, PermissionGuard) |
-| `src/features/` | Layer 1, 2, 3 | Feature pages, hooks, schemas |
-| `src/components/hooks/` | Layer 2, 5 | Shared hooks (useSession, usePermissions) |
-| `src/services/` | Layer 4 | apiClient, authService, generatorService |
-| `src/policies/` | Layer 3 | Roles, permissions, access policies |
-| `src/schemas/` | Layer 3 | Zod validation schemas |
-| `src/providers/` | Layer 5 | SessionProvider, context |
-| `src/i18n/` | Layer 5 | Translations, react-i18next config |
-| `src/styles/` | Layer 5 | Tokens, theme, breakpoints, globals |
-| `src/types/` | Layer 5 | Session types, shared interfaces |
-| `src/utils/` | Layer 5 | Helpers, formatters, constants |
+| `src/components/atoms/` | Layer 1 | Primitive UI components |
+| `src/components/molecules/` | Layer 1 | Composite UI components |
+| `src/components/organisms/` | Layer 1 | Layout and page composition |
+| `src/routes/` | Layer 1 | Route orchestration and navigation |
+| `src/auth/guards/` | Layer 1 | Routing guards (AuthGuard, GuestGuard, PolicyGuard) |
+| `src/components/hooks/` | Layer 2 | Application orchestration hooks |
+| `src/models/` | Layer 3 | Domain schemas and shared model contracts |
+| `src/auth/policies/` | Layer 3 | Roles, permissions, and access policies |
+| `src/auth/auth-schemas.ts` | Layer 3 | Authentication validation schemas |
+| `src/services/` | Layer 4 | API client and HTTP interceptors |
+| `src/auth/authService.ts` | Layer 4 | Authentication service integration |
+| `src/state/` | Layer 5 | Session state, provider, and store |
+| `src/components/styles/` | Layer 5 | Design tokens, theme, and global styles |
+| `src/components/i18n/` | Layer 5 | Translation resources and i18n setup |
+| `src/utils/` | Layer 5 | Cross-cutting utilities (logging, errors, validators) |
 
 **Dependency rules:**
 
