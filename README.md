@@ -664,6 +664,8 @@ export function FileList({ files }: { files: FileItem[] }) {
 - HTTP-only secure cookies preferred for session handling
 
 ### 1.4.2 Authentication
+Uses Microsoft Entra
+
 1. User submits email and password.
 2. Frontend validates the form using Zod.
   ```TypeScript
