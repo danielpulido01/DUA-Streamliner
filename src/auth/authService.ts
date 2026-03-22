@@ -4,11 +4,11 @@ import {
   loginRequestSchema,
   resetPasswordRequestSchema,
 } from "./auth-schemas";
-import { apiFetch, authFetch } from "../services/client";
+import { httpClientFacade } from "../services/client";
 import type { AuthSession } from "../state/session.types";
 import { sessionManager } from "../state/sessionManager";
 
-type LoginInput = {
+export type LoginInput = {
   email: string;
   password: string;
 };
@@ -50,13 +50,25 @@ export class NoTenantAccessError extends AuthServiceError {
 }
 
 export class AuthService {
+  private static instance: AuthService | null = null;
+
+  static getInstance() {
+    if (!AuthService.instance) {
+      AuthService.instance = new AuthService();
+    }
+
+    return AuthService.instance;
+  }
+
+  private constructor() {}
+
   async login(input: LoginInput): Promise<AuthSession | null> {
     const payload = parseWithSchema(loginRequestSchema, input, {
       schemaName: "login request",
       context: { scope: "auth-service" },
     });
 
-    const response = await apiFetch("/api/auth/login", {
+    const response = await httpClientFacade.fetch("/api/auth/login", {
       method: "POST",
       body: JSON.stringify(payload),
     });
@@ -70,14 +82,14 @@ export class AuthService {
 
   async logout(): Promise<void> {
     try {
-      await apiFetch("/api/auth/logout", { method: "POST" });
+      await httpClientFacade.fetch("/api/auth/logout", { method: "POST" });
     } finally {
       sessionManager.clearSession();
     }
   }
 
   async refreshSession(): Promise<AuthSession | null> {
-    const refreshResponse = await apiFetch("/api/auth/refresh", { method: "POST" });
+    const refreshResponse = await httpClientFacade.fetch("/api/auth/refresh", { method: "POST" });
     if (!refreshResponse.ok) {
       sessionManager.clearSession();
       return null;
@@ -99,7 +111,7 @@ export class AuthService {
       },
     );
 
-    const response = await apiFetch("/api/auth/forgot-password", {
+    const response = await httpClientFacade.fetch("/api/auth/forgot-password", {
       method: "POST",
       body: JSON.stringify(payload),
     });
@@ -123,7 +135,7 @@ export class AuthService {
       },
     );
 
-    const response = await apiFetch("/api/auth/reset-password", {
+    const response = await httpClientFacade.fetch("/api/auth/reset-password", {
       method: "POST",
       body: JSON.stringify(payload),
     });
@@ -134,7 +146,7 @@ export class AuthService {
   }
 
   async getCurrentSession(): Promise<AuthSession | null> {
-    const response = await authFetch("/api/auth/me");
+    const response = await httpClientFacade.authFetch("/api/auth/me");
 
     if (response.status === 401) {
       sessionManager.clearSession();
@@ -155,4 +167,72 @@ export class AuthService {
   }
 }
 
-export const authService = new AuthService();
+export const authService = AuthService.getInstance();
+
+export interface AuthServiceFacade {
+  login(input: LoginInput): Promise<AuthSession | null>;
+  logout(): Promise<void>;
+  refreshSession(): Promise<AuthSession | null>;
+  requestPasswordReset(email: string, redirectTo?: string): Promise<void>;
+  resetPassword(accessToken: string, refreshToken: string, newPassword: string): Promise<void>;
+  getCurrentSession(): Promise<AuthSession | null>;
+  isAuthServiceError(reason: unknown): reason is AuthServiceError;
+  isNoTenantAccessError(reason: unknown): reason is NoTenantAccessError;
+  toErrorMessage(reason: unknown, fallbackMessage?: string): string;
+}
+
+class DefaultAuthServiceFacade implements AuthServiceFacade {
+  private static instance: DefaultAuthServiceFacade | null = null;
+
+  static getInstance() {
+    if (!DefaultAuthServiceFacade.instance) {
+      DefaultAuthServiceFacade.instance = new DefaultAuthServiceFacade();
+    }
+
+    return DefaultAuthServiceFacade.instance;
+  }
+
+  private constructor() {}
+
+  login(input: LoginInput) {
+    return authService.login(input);
+  }
+
+  logout() {
+    return authService.logout();
+  }
+
+  refreshSession() {
+    return authService.refreshSession();
+  }
+
+  requestPasswordReset(email: string, redirectTo?: string) {
+    return authService.requestPasswordReset(email, redirectTo);
+  }
+
+  resetPassword(accessToken: string, refreshToken: string, newPassword: string) {
+    return authService.resetPassword(accessToken, refreshToken, newPassword);
+  }
+
+  getCurrentSession() {
+    return authService.getCurrentSession();
+  }
+
+  isAuthServiceError(reason: unknown): reason is AuthServiceError {
+    return reason instanceof AuthServiceError;
+  }
+
+  isNoTenantAccessError(reason: unknown): reason is NoTenantAccessError {
+    return reason instanceof NoTenantAccessError;
+  }
+
+  toErrorMessage(reason: unknown, fallbackMessage = "Operation failed.") {
+    if (reason instanceof Error && reason.message.trim().length > 0) {
+      return reason.message;
+    }
+
+    return fallbackMessage;
+  }
+}
+
+export const authServiceFacade = DefaultAuthServiceFacade.getInstance();

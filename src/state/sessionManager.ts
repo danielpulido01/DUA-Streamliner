@@ -14,9 +14,20 @@ type SessionManagerConfig = {
 };
 
 class SessionManager {
+  private static instance: SessionManager | null = null;
   private readonly unauthorizedListeners = new Set<UnauthorizedListener>();
   private loginPath = "/login";
   private redirectOnUnauthorized = true;
+
+  static getInstance() {
+    if (!SessionManager.instance) {
+      SessionManager.instance = new SessionManager();
+    }
+
+    return SessionManager.instance;
+  }
+
+  private constructor() {}
 
   configure(config: SessionManagerConfig) {
     if (typeof config.loginPath === "string" && config.loginPath.trim().length > 0) {
@@ -198,4 +209,4 @@ function asBoolean(value: unknown, defaultValue = false) {
   return typeof value === "boolean" ? value : defaultValue;
 }
 
-export const sessionManager = new SessionManager();
+export const sessionManager = SessionManager.getInstance();

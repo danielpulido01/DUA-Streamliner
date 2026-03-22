@@ -1,10 +1,10 @@
-# DUA-Streamliner
+﻿# DUA-Streamliner
 
 ## Problem Statement
 
-The preparation process of the Single Customs Declaration (DUA) in Costa Rica is manual, repetitive, and highly dependent on expert knowledge. To complete it correctly, multiple source documents must be interpreted — including commercial invoices, packing lists, certificates of origin, bills of lading, and insurance policies — which are typically provided in heterogeneous formats such as Excel, Word, PDF, and scanned images, often with varying structures.
+The preparation process of the Single Customs Declaration (DUA) in Costa Rica is manual, repetitive, and highly dependent on expert knowledge. To complete it correctly, multiple source documents must be interpreted - including commercial invoices, packing lists, certificates of origin, bills of lading, and insurance policies - which are typically provided in heterogeneous formats such as Excel, Word, PDF, and scanned images, often with varying structures.
 
-This documentary diversity requires case-by-case interpretation, increasing the risk of errors, value inconsistencies, missing information, and potential penalties or delays in import and export procedures. Additionally, the time spent on operational tasks limits the customs professional’s ability to focus on strategic validation and regulatory compliance.
+This documentary diversity requires case-by-case interpretation, increasing the risk of errors, value inconsistencies, missing information, and potential penalties or delays in import and export procedures. Additionally, the time spent on operational tasks limits the customs professionalâ€™s ability to focus on strategic validation and regulatory compliance.
 
 The core problem lies in the absence of an intelligent system capable of automatically interpreting heterogeneous commercial documents, extracting relevant information, and reliably mapping it to the official DUA template defined by the Ministry of Finance.
 
@@ -154,17 +154,17 @@ Evaluate user ability to:
 
 | Task | Description |
 |------|------------|
-| Task 1 — Login | User attempts to log into the system |
-| Task 2 — Generate DUA | User initiates the DUA generation process |
-| Task 3 — Configure Generator | User uploads files and configures generation |
-| Task 4 — Review Document | User analyzes and validates generated DUA |
-| Task 5 — Logout | User ends the session |
+| Task 1 - Login | User attempts to log into the system |
+| Task 2 - Generate DUA | User initiates the DUA generation process |
+| Task 3 - Configure Generator | User uploads files and configures generation |
+| Task 4 - Review Document | User analyzes and validates generated DUA |
+| Task 5 - Logout | User ends the session |
 
 #### Participants
-- Lazaro González (Student)
+- Lazaro GonzÃ¡lez (Student)
 - Jimena Sanchez (Student)
 - Juan Diego Arce (Student)
-- Josué Venegas (Student)
+- JosuÃ© Venegas (Student)
 
 #### Key Metrics (Maze)
 
@@ -205,67 +205,67 @@ Evaluate user ability to:
 
 The following screenshot from Maze shows the registered participants and their test execution status:
 
-<img src="/media/participants.png" width="400"/>
+![Participants](/media/participants.png)
 
-#### Task 1 — Login
+#### Task 1 - Login
 
 Users attempted to authenticate using their credentials.
 
 **Maze Evidence**
 
-<img src="/media/task1-login.png" width="500"/>
+![Task 1 Login](/media/task1-login.png)
 
 **Heatmap**
 
-<img src="/media/task1-heatmap.jpg" width="400"/>
+![Task 1 Heatmap](/media/task1-heatmap.jpg)
 
-#### Task 2 — Generate DUA
+#### Task 2 - Generate DUA
 
 Users initiated the DUA generation process from the main interface.
 
 **Maze Evidence**
 
-<img src="/media/task2-generate.png" width="500"/>
+![Task 2 Generate](/media/task2-generate.png)
 
 **Heatmap**
 
-<img src="/media/task2-heatmap.jpg" width="400"/>
+![Task 2 Heatmap](/media/task2-heatmap.jpg)
 
-#### Task 3 — Configure Generator
+#### Task 3 - Configure Generator
 
 Users uploaded files and configured the generation process.
 
 **Maze Evidence**
 
-<img src="/media/task3-configure.png" width="500"/>
+![Task 3 Configure](/media/task3-configure.png)
 
 **Heatmap**
 
-<img src="/media/task3-heatmap.jpg" width="400"/>
+![Task 3 Heatmap](/media/task3-heatmap.jpg)
 
-#### Task 4 — Review Document
+#### Task 4 - Review Document
 
 Users reviewed the generated DUA and validated its correctness.
 
 **Maze Evidence**
 
-<img src="/media/task4-review.png" width="500"/>
+![Task 4 Review](/media/task4-review.png)
 
 **Heatmap**
 
-<img src="/media/task4-heatmap.jpg" width="400"/>
+![Task 4 Heatmap](/media/task4-heatmap.jpg)
 
-#### Task 5 — Logout
+#### Task 5 - Logout
 
 Users ended their session through the logout action.
 
 **Maze Evidence**
 
-<img src="/media/task5-logout.png" width="500"/>
+![Task 5 Logout](/media/task5-logout.png)
 
 **Heatmap**
 
-<img src="/media/task5-heatmap.jpg" width="400"/>
+![Task 5 Heatmap](/media/task5-heatmap.jpg)
 
 
 ## 1.3 Component design strategy
@@ -274,22 +274,24 @@ Users ended their session through the logout action.
 The frontend follows an atomic design for component architecture.
 
 ### 1.3.2 Component Hierarchy
-[Components](src/components)
+[Components](/src/components)
 
-For this project we will have 5 layers:
+Current component implementation uses 4 atomic UI layers plus shared support modules:
 ```
 src/
- ├ components/
- │   ├ atoms/
- │   ├ molecules/
- │   ├ organisms/
- │   ├ templates/
- │   └ pages/
+ â”œ components/
+ â”‚   â”œ atoms/
+ â”‚   â”œ molecules/
+ â”‚   â”œ organisms/
+ â”‚   â”œ pages/
+ â”‚   â”œ hooks/
+ â”‚   â”œ i18n/
+ â”‚   â”” styles/
 ```
 
 ### 1.3.3 Component Categories
 
-#### [Atoms](src/components/atoms)
+#### [Atoms](/src/components/atoms)
 Reusable low-level UI components (no business logic)
 
 - Must be pure UI
@@ -321,7 +323,7 @@ Example usage:
 </Button>
 ```
 
-#### [Molecules](src/components/molecules)
+#### [Molecules](/src/components/molecules)
 Built from primitives
 
 - Combine primitives
@@ -336,14 +338,12 @@ info-banner.tsx
 Example:
 ```
 InfoBanner
- ├ Alert
- └ Button
+ â”œ Alert
+ â”” Button
 ```
 
-#### [Organisms](src/components/organisms)
-
-#### [Templates](src/components/organisms)
-Components responsible for page structure and navigation.
+#### [Organisms](/src/components/organisms)
+Components responsible for larger layout composition and section structure.
 
 - Must not contain business logic
 - Responsible only for layout composition
@@ -360,35 +360,28 @@ PageContainer
 Example:
 ```
 DashboardLayout
- ├ Sidebar
- ├ Topbar
- └ PageContent
+ â”œ Sidebar
+ â”œ Topbar
+ â”” PageContent
 ```
 
-#### [Pages](src/routes)
+#### [Pages](/src/components/pages)
 Feature-specific components tied to a business process.
 
 - Coordinate business logic through hooks, which interact with services
 - Manage state
 - Compose composites + layouts
+- Are mounted by route definitions in [AppRouter.tsx](/src/routes/AppRouter.tsx) and [routeConfig.ts](/src/routes/routeConfig.ts)
 
 ```
-features/
- ├ auth/
- │   └ LoginPage.tsx
- ├ dua-generator/
- │   ├ ConfigureGeneratorPage.tsx
- │   ├ ProgressPage.tsx
- │   └ PreviewPage.tsx
- └ dashboard/
-     └ HomePage.tsx
+GenerationProgressPage.tsx
 ```
 
 ### 1.3.4 Component Reuse Strategy
 
 Before creating a new component developers must:
-1. Search in [Atoms](src/components/atoms)
-2. Search in [Molecules](src/components/molecules)
+1. Search in [Atoms](/src/components/atoms)
+2. Search in [Molecules](/src/components/molecules)
 If a similar component exists, extend it by adding props, variants, or composition instead of duplicating code.
 
 Components must be configurable using props instead of duplication.
@@ -399,24 +392,27 @@ Components must be configurable using props instead of duplication.
 <Button variant="danger" />
 ```
 
-#### [Hooks](src/components/hooks)
+#### [Hooks](/src/components/hooks)
 Components use hooks for business logic.
 Example:
 ```
 useLogin()
-useUploadFiles()
+useLogout()
 useGenerationProgress()
+useDuaGeneration()
+useApplicationServices()
 ```
 
-Hooks use [Services](src/services) for API calls:
+Hooks use [Services](/src/services), [Auth service](/src/auth/authService.ts), and [State managers](/src/state) for orchestration:
 
 Example:
 ```
-generatorService.ts
+applicationFacade.ts
+generationManager.ts
 ```
 
-### 1.3.5 [Styles](src/components/styles)
-All visual styles must be centralized using design tokens in [Tokens](src/components/styles/tokens.ts)
+### 1.3.5 [Styles](/src/components/styles)
+All visual styles must be centralized using design tokens in [Tokens](/src/components/styles/tokens.ts)
 
 Example:
 ```
@@ -440,7 +436,7 @@ export const radius = {
 }
 ```
 
-#### [Theme](src/components/styles/theme.ts)
+#### [Theme](/src/components/styles/theme.ts)
 How do I switch dark/light mode? How do I add a new theme?
 
 Example:
@@ -459,13 +455,14 @@ export const theme = {
 Developers must:
 - Use tokens
 - Avoid hardcoded colors
-- Avoid inline styles
+- Prefer token-based class names/CSS variables for visual styling
+- Use inline styles only for temporary layout scaffolding
 
 Example:
 
 Correct
 ```TypeScript
-<Button style={{ background: theme.colors.primary }} />
+<Button className="bg-[var(--color-primary)] text-[var(--color-primary-foreground)]" />
 ```
 Incorrect
 ```TypeScript
@@ -475,10 +472,10 @@ Incorrect
 ### 1.3.6 Internationalization Strategy
 All text must be externalized.
 
-#### [i18n](src/components/i18n)
+#### [i18n](/src/components/i18n)
 Insert new languages in this folder:
-[es](src/components/i18n/es.json)
-[en](src/components/i18n/en.json)
+[es](/src/components/i18n/es.json)
+[en](/src/components/i18n/en.json)
 
 Example:
 ```JSON
@@ -516,7 +513,7 @@ const { t } = useTranslation()
 ```
 
 ### 1.3.7 Responsiveness Strategy
-Responsiveness must be centralized using breakpoint tokens in [breakpoints](src/components/styles/breakpoints.ts)
+Responsiveness must be centralized using breakpoint tokens in [breakpoints](/src/components/styles/breakpoints.ts)
 
 Example:
 ```TypeScript
@@ -544,9 +541,9 @@ grid-template-columns:
 #### Layout example
 ```
 Home Page
- ├ Summary cards
- ├ Uploaded files table
- └ Activity log
+ â”œ Summary cards
+ â”œ Uploaded files table
+ â”” Activity log
 ```
 
 Responsive behavior:
@@ -667,40 +664,42 @@ export function FileList({ files }: { files: FileItem[] }) {
 - HTTP-only secure cookies preferred for session handling
 
 ### 1.4.2 Authentication
-1. User submits username, password, and one-time token.
+Uses Microsoft Entra
+
+1. User submits email and password.
 2. Frontend validates the form using Zod.
   ```TypeScript
   import { z } from "zod";
 
   export const loginRequestSchema = z.object({
-    username: z.string().min(1),
+    email: z.string().email(),
     password: z.string().min(1),
-    oneTimeToken: z.string().min(1),
   });
   
   export type LoginRequest = z.infer<typeof loginRequestSchema>;
   ```
-3. Frontend sends credentials to backend via [authService.ts](src/auth/authService.ts).
+3. Frontend sends credentials to backend via [authService.ts](/src/auth/authService.ts).
   ```TypeScript
-  import { apiClient } from "@/services/apiClient";
-  import type { LoginRequest } from "../schemas/loginRequest.schema";
-  import type { AuthSession } from "@/security/session/session.types";
+  import { parseWithSchema } from "../utils/schemaValidator";
+  import { loginRequestSchema } from "./auth-schemas";
+  import { httpClientFacade } from "../services/client";
+  import type { AuthSession } from "../state/session.types";
 
   export class AuthService {
-    async login(payload: LoginRequest): Promise<AuthSession> {
-      return apiClient.post("/auth/login", payload);
-    }
+    async login(input: { email: string; password: string }): Promise<AuthSession | null> {
+      const payload = parseWithSchema(loginRequestSchema, input, { schemaName: "login request" });
+      const response = await httpClientFacade.fetch("/api/auth/login", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
 
-    async logout(): Promise<void> {
-      await apiClient.post("/auth/logout");
-    }
+      if (!response.ok) {
+        throw new Error("Login failed.");
+      }
 
-    async getCurrentSession(): Promise<AuthSession> {
-      return apiClient.get("/auth/me");
+      return this.getCurrentSession();
     }
   }
-
-  export const authService = new AuthService();
   ```
 4. Backend validates the credentials.
 5. Backend creates the session.
@@ -709,35 +708,32 @@ export function FileList({ files }: { files: FileItem[] }) {
    - Authenticated user profile
    - Permission set or role set
   
-  [useLogin.ts](src/components/hooks/useLogin.ts)
+  [useLogin.ts](/src/components/hooks/useLogin.ts)
   ```TypeScript
   import { useState } from "react";
-  import { authService } from "../services/authService";
-  import { loginRequestSchema, type LoginRequest } from "../schemas/loginRequest.schema";
-  import { useSession } from "@/security/hooks/useSession";
+  import { useSession } from "./useSession";
+  import { useApplicationServices } from "./useApplicationServices";
 
   export function useLogin() {
+    const { auth } = useApplicationServices();
     const { setSession } = useSession();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    async function login(input: LoginRequest) {
+    async function login(input: { email: string; password: string }) {
       setError(null);
       setIsLoading(true);
 
-      const parsed = loginRequestSchema.safeParse(input);
-      if (!parsed.success) {
-        setIsLoading(false);
-        setError("Invalid login data");
-        return false;
-      }
-
       try {
-        const session = await authService.login(parsed.data);
+        const session = await auth.login(input);
+        if (!session) {
+          setError("No active session was returned by the server.");
+          return false;
+        }
         setSession(session);
         return true;
       } catch {
-        setError("Invalid credentials");
+        setError("Login failed.");
         return false;
       } finally {
         setIsLoading(false);
@@ -767,7 +763,7 @@ export function FileList({ files }: { files: FileItem[] }) {
 ### 1.4.3 Authorization
 
 #### 1.4.3.1 Roles
-Roles are found in [roles.ts](src/auth/policies/roles.ts)
+Roles are found in [roles.ts](/src/auth/policies/roles.ts)
 
 | Code     | Description                                                                                                                |
 | -------- | -------------------------------------------------------------------------------------------------------------------------- |
@@ -777,7 +773,7 @@ Roles are found in [roles.ts](src/auth/policies/roles.ts)
 | viewer   | Can access Home, view files, view activity, and monitor process status, but cannot generate or confirm DUAs                |
 
 #### 1.4.3.2 Permissions
-Permissions are found in [permissions.ts](src/auth/policies/permissions.ts)
+Permissions are found in [permissions.ts](/src/auth/policies/permissions.ts)
 
 **Permission Catalog**
 | Code                   | Description                                                        |
@@ -819,7 +815,7 @@ Permissions are found in [permissions.ts](src/auth/policies/permissions.ts)
 
 
 #### 1.4.3.3 Role-Permission Mapping
-Role to permissions mapping is found in [rolePermissions.ts](src/auth/policies/rolePermissions.ts)
+Role to permissions mapping is found in [rolePermissions.ts](/src/auth/policies/rolePermissions.ts)
 
 | Role     | Permissions                                                                                                                                                                                                                                         |
 | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -830,7 +826,7 @@ Role to permissions mapping is found in [rolePermissions.ts](src/auth/policies/r
 
 
 #### 1.4.3.4 Access Policies
-Access Policies are found in [accessPolicy.ts](src/auth/policies/accessPolicy.ts)
+Access Policies are found in [accessPolicy.ts](/src/auth/policies/accessPolicy.ts)
 
 | Policy                  | Required Permissions                                       | Description                                           |
 | ----------------------- | ---------------------------------------------------------- | ----------------------------------------------------- |
@@ -853,7 +849,7 @@ Access Policies are found in [accessPolicy.ts](src/auth/policies/accessPolicy.ts
 #### 1.4.3.5 Routing Protection
 This project has three methods of routing protection, use depending on each routes context.
 
-**[AuthGuard.tsx](src/auth/guards/AuthGuard.tsx)**
+**[AuthGuard.tsx](/src/auth/guards/AuthGuard.tsx)**
 
 Use this guard to prevent unauthenticated access to specific routes.
 
@@ -867,7 +863,7 @@ Example usage:
   </AuthGuard>
 ```
 
-**[GuestGuard.tsx](src/auth/guards/GuestGuard.tsx)**
+**[GuestGuard.tsx](/src/auth/guards/GuestGuard.tsx)**
 
 Use this guard to prevent authenticated users accessing unauthenticated sites.
 
@@ -879,7 +875,7 @@ Example usage:
   </GuestGuard>
 ```
 
-**[PolicyGuard.tsx](src/auth/guards/PolicyGuard.tsx)**
+**[PolicyGuard.tsx](/src/auth/guards/PolicyGuard.tsx)**
 
 Use this guard when an entire route, page, or protected section requires a specific set of permissions defined by an access policy.
 
@@ -1141,38 +1137,30 @@ The frontend uses a five-layer architecture with clear responsibilities and down
 
 **Architecture diagram:**
 
-![Frontend Layers](<media/Diagrama-5-Capas.png>)
+![Frontend Layers](/media/Diagrama-5-Capas.png)
 
 
-**Layer 1 — Presentation:** UI components (primitives, composites, layouts, feature pages) render data and capture input. They do not call APIs directly. AppRouter and route guards protect navigation.
+**Layer 1 - Presentation:** UI components (primitives, composites, layouts, feature pages) render data and capture input. They do not call APIs directly. AppRouter and route guards protect navigation.
 
-**Layer 2 — Application:** Hooks orchestrate validation, service calls, and state updates. Standard flow: validate input -> call service -> update infrastructure (session, permissions).
+**Layer 2 - Application:** Hooks orchestrate validation, service calls, and state updates. Standard flow: validate input -> call service -> update infrastructure (session, permissions).
 
-**Layer 3 — Domain Logic:** Zod schemas validate input. Permission checks use `usePermissions()`, not direct role comparisons. Policies define roles and permissions.
+**Layer 3 - Domain Logic:** Zod schemas validate input. Permission checks use `usePermissions()`, not direct role comparisons. Policies define roles and permissions.
 
-**Layer 4 — Services:** `apiClient` and typed services (`authService`, `generatorService`) handle backend communication. `httpInterceptors.ts` handles cross-cutting concerns (session validation, 401). Services are stateless.
+**Layer 4 - Services:** Facades and source clients in [client.ts](/src/services/client.ts), auth operations in [authService.ts](/src/auth/authService.ts), and strategy/proxy/reporting modules handle backend communication and processing seams.
 
-**Layer 5 — Infrastructure:** Shared foundation: `SessionProvider`, design tokens, i18n, observability, and utilities.
+**Layer 5 - Infrastructure:** Shared foundation: `SessionProvider`, design tokens, i18n, observability, and utilities.
 
 **Folder mapping:**
 
 | Folder | Layers | Purpose |
 |--------|--------|---------|
-| `src/components/atoms/` | Layer 1 | Primitive UI components |
-| `src/components/molecules/` | Layer 1 | Composite UI components |
-| `src/components/organisms/` | Layer 1 | Layout and page composition |
-| `src/routes/` | Layer 1 | Route orchestration and navigation |
+| `src/components/` | Layer 1 | UI components (atoms/molecules/organisms/pages) |
+| `src/routes/` | Layer 1 | Route composition and guarded navigation |
 | `src/auth/guards/` | Layer 1 | Routing guards (AuthGuard, GuestGuard, PolicyGuard) |
 | `src/components/hooks/` | Layer 2 | Application orchestration hooks |
-| `src/models/` | Layer 3 | Domain schemas and shared model contracts |
-| `src/auth/policies/` | Layer 3 | Roles, permissions, and access policies |
-| `src/auth/auth-schemas.ts` | Layer 3 | Authentication validation schemas |
-| `src/services/` | Layer 4 | API client and HTTP interceptors |
-| `src/auth/authService.ts` | Layer 4 | Authentication service integration |
-| `src/state/` | Layer 5 | Session state, provider, and store |
-| `src/components/styles/` | Layer 5 | Design tokens, theme, and global styles |
-| `src/components/i18n/` | Layer 5 | Translation resources and i18n setup |
-| `src/utils/` | Layer 5 | Cross-cutting utilities (logging, errors, validators) |
+| `src/auth/policies/`, `src/models/` | Layer 3 | Domain access rules and shared schemas/types |
+| `src/services/`, `src/auth/authService.ts` | Layer 4 | HTTP facade, auth service, interceptors, strategy/proxy/reporting modules |
+| `src/state/`, `src/components/styles/`, `src/components/i18n/`, `src/utils/` | Layer 5 | Session/state stores, design system, localization, utilities |
 
 **Dependency rules:**
 
@@ -1186,15 +1174,608 @@ Common violations: primitive components importing services, services using React
 
 **Example: Login flow**
 
-`LoginForm` -> `useLogin()` -> `loginRequestSchema` validation -> `authService.login()` -> `apiClient` request -> backend session -> `setSession()` -> `SessionProvider` update -> redirect to Home.
+`useLogin()` -> `useApplicationServices().auth.login()` -> `authService.login()` -> `httpClientFacade.fetch("/api/auth/login")` -> `authService.getCurrentSession()` -> `sessionManager.setSession()` -> `SessionProvider` update.
 
 **Example: DUA generation flow**
 
-`ConfigureGeneratorPage` -> `useUploadFiles()` -> permission check (`dua.generate`) -> `uploadConfigSchema` validation -> `generatorService.startGeneration()` -> multipart request -> job ID -> `ProgressPage` -> `useGenerationProgress()` polling -> preview retrieval -> `PreviewPage` render.
+`GenerationProgressPage` -> `useDuaGeneration().startGeneration()` -> `generationManager.startGeneration()` -> `generationProgressStore.patchState(...)` -> `useGenerationProgress()` subscription update -> progress UI render.
 
 ## 1.6 Design patterns
 
-- Use Builder Pattern and Strategy Pattern to create and compose heterogeneous DUA document processors (docx, xlsx, pdf, jpg, png) from application hooks, centralizing format-processing abstractions and keeping UI orchestration in [src/components/hooks](src/components/hooks).
+### Singleton
+The following classes currently use singleton pattern:
+- [logger.ts](/src/utils/logger.ts)
+  - `ConsoleLogStrategy`
+  - `RemoteLogStrategy`
+  - `Logger`
+- [error-handler.ts](/src/utils/error-handler.ts)
+  - `ErrorHandler`
+- [authService.ts](/src/auth/authService.ts)
+  - `AuthService`
+- [sessionManager.ts](/src/state/sessionManager.ts)
+  - `SessionManager`
+- [generationProgressStore.ts](/src/state/generationProgressStore.ts)
+  - `GenerationProgressStore`
+- [generationManager.ts](/src/state/generationManager.ts)
+  - `GenerationManager`
+- [client.ts](/src/services/client.ts)
+  - `DefaultHttpClientFacade`
+- [authService.ts](/src/auth/authService.ts)
+  - `DefaultAuthServiceFacade`
+- [applicationFacade.ts](/src/services/applicationFacade.ts)
+  - `DefaultApplicationServiceFacade`
+
+#### When to apply here
+Apply only if all are true:
+
+1. One shared instance is desired app-wide.
+2. Behavior must stay consistent across all consumers.
+3. Class should not be recreated with different runtime config per feature.
+
+#### Do not apply here
+
+Skip singleton for:
+
+- Error objects (`*Error` classes): create per error event.
+- React components (`*.tsx` class components): React manages lifecycle.
+- Per-operation mutable workers (report formatters/generators with internal buffers).
+- Classes expected to be composed with different options in tests/features (for example semantic analyzer implementations).
+- `SourceHttpClient`: managed as per-source registry (multiton), not one global instance.
+
+#### Implementation recipe
+
+For a candidate class, implement this exact structure:
+
+```ts
+export class MyService {
+  private static instance: MyService | null = null;
+
+  static getInstance() {
+    if (!MyService.instance) {
+      MyService.instance = new MyService();
+    }
+    return MyService.instance;
+  }
+
+  private constructor() {}
+
+  // existing methods...
+}
+
+export const myService = MyService.getInstance();
+```
+
+#### If constructor currently takes dependencies
+
+Use lazy default dependencies inside `getInstance()` and keep one public exported instance.
+
+```ts
+static getInstance(dep: Dep = defaultDep) {
+  if (!X.instance) {
+    X.instance = new X(dep);
+  }
+  return X.instance;
+}
+```
+
+#### Migration steps for a new class
+
+1. Add `private static instance` field.
+2. Add `static getInstance(...)`.
+3. Make constructor `private`.
+4. Replace exported `new ClassName(...)` with `ClassName.getInstance(...)`.
+5. Keep existing exported constant name to avoid call-site churn.
+
+#### Quick checks before finishing
+
+Run:
+
+```powershell
+rg -n "new ClassName\(" src -S
+```
+
+Expected: only the `new ClassName(...)` inside `getInstance()` remains.
+
+Also verify no existing consumers were forced to import the class directly when they were using the exported instance constant.
+
+
+### Observer
+Use these files as the canonical pattern:
+
+- [generation.types.ts](/src/state/generation.types.ts)
+- [generationProgressStore.ts](/src/state/generationProgressStore.ts)
+- [generationManager.ts](/src/state/generationManager.ts)
+- [useGenerationProgress.ts](/src/components/hooks/useGenerationProgress.ts)
+- [useDuaGeneration.ts](/src/components/hooks/useDuaGeneration.ts)
+- [GenerationProgressPage.tsx](/src/components/pages/GenerationProgressPage.tsx)
+
+#### 1) State Contract (`*.types.ts`)
+
+Define:
+
+- Progress phases
+- Run state (`idle`, `running`, `completed`, etc.)
+- Progress snapshot shape
+- `createInitial...State()` factory
+
+Rule: keep this file purely declarative (types + initializer).
+
+#### 2) Observable Store (`*Store.ts`)
+
+Must expose:
+
+- `getState()`
+- `subscribe(listener) => unsubscribe`
+- `setState(next)`
+- `patchState(partial)`
+- `reset()`
+
+Rule: listeners are stored in a `Set`, and `subscribe` must emit current state immediately.
+
+#### 3) Manager/Publisher (`*Manager.ts`)
+
+Must expose:
+
+- `start...()` to begin async work
+- `cancel...()` (optional but recommended)
+- `subscribe(...)` pass-through to store
+- `get...Snapshot()` pass-through to store
+
+Rule: start work asynchronously (`void this.run...()`) so UI thread is not blocked.
+
+Business logic methods should be isolated and replaceable:
+
+- `prepare...()` placeholder
+- `persist...()` placeholder
+
+#### 4) Subscriber Hook (`use...Progress.ts`)
+
+Hook responsibilities:
+
+- seed state from manager snapshot
+- subscribe on mount
+- unsubscribe on unmount
+- return current state only
+
+Rule: no business logic inside subscriber hook.
+
+#### 5) Action Hook (`use...Generation.ts` or similar)
+
+Hook responsibilities:
+
+- expose `start...()` / `cancel...()`
+- hold local start/cancel errors and loading flags
+- delegate execution to manager
+
+Rule: this hook is orchestration-facing, not rendering-facing.
+
+#### 6) View Component
+
+Responsibilities:
+
+- read progress from subscriber hook
+- trigger actions via action hook
+- render status/progress/errors
+
+Rule: no direct service/store calls in view.
+
+#### Reuse Steps For New Flows
+
+When implementing another long-running workflow (example: import, analysis, export):
+
+1. Copy and rename the 3 state files (`types`, `store`, `manager`).
+2. Replace phase names and status texts.
+3. Keep the same observer API (`subscribe/getState/patchState`).
+4. Create two hooks:
+   - one subscriber hook (`useXProgress`)
+   - one action hook (`useXActions` or `useXGeneration`)
+5. Wire a page/view to those hooks only.
+6. Replace placeholder methods with real business logic later.
+
+#### Minimal Agent Checklist
+
+Before marking work complete, ensure:
+
+- [ ] Store has unsubscribe support.
+- [ ] `subscribe` emits snapshot immediately.
+- [ ] Manager starts async work without blocking render.
+- [ ] Progress updates are pushed through store (not polled in view).
+- [ ] Hooks are the only interface used by UI.
+- [ ] Placeholders are isolated for future real logic.
+
+#### Agent Copy Template
+
+```ts
+// store
+type Listener<T> = (state: T) => void;
+class XStore {
+  private listeners = new Set<Listener<XState>>();
+  private state: XState = createInitialXState();
+  getState() { return this.state; }
+  subscribe(listener: Listener<XState>) {
+    this.listeners.add(listener);
+    listener(this.state);
+    return () => this.listeners.delete(listener);
+  }
+  patchState(partial: Partial<XState>) {
+    this.state = { ...this.state, ...partial };
+    for (const listener of this.listeners) listener(this.state);
+  }
+}
+```
+
+```ts
+// manager
+async function startX() {
+  store.patchState({ runState: "running" });
+  void runXAsync(); // non-blocking kickoff
+}
+```
+
+```ts
+// progress hook
+function useXProgress() {
+  const [state, setState] = useState(() => manager.getSnapshot());
+  useEffect(() => manager.subscribe(setState), []);
+  return state;
+}
+```
+
+### Proxy
+[semantic](/src/services/semantic)
+- [SemanticAnalyzer.ts](/src/services/semantic/SemanticAnalyzer.ts)
+  - Interface: `SemanticAnalyzer`
+  - Method: `calculateSimilarity(input) => Promise<SemanticSimilarityResult>`
+- [RealSemanticAnalyzer.ts](/src/services/semantic/RealSemanticAnalyzer.ts)
+  - Class: `RealSemanticAnalyzer implements SemanticAnalyzer`
+  - Optional constructor dependency: `EmbeddingProvider`
+- [SemanticAnalyzerProxy.ts](/src/services/semantic/SemanticAnalyzerProxy.ts)
+  - Class: `SemanticAnalyzerProxy implements SemanticAnalyzer`
+  - Extra methods: `getMetrics()`, `clearCache()`
+- [index.ts](/src/services/semantic/index.ts)
+  - Barrel exports for all public types/classes
+
+#### How to use in other classes
+1. Depend on the interface (`SemanticAnalyzer`).
+2. Inject one shared analyzer instance (use proxy in runtime).
+3. Call `calculateSimilarity` for each `(chunk, section)` pair.
+
+```ts
+import type { SemanticAnalyzer, SemanticSectionProfile } from "./semantic";
+
+export class ChunkClassifier {
+  constructor(private readonly analyzer: SemanticAnalyzer) {}
+
+  async bestMatch(chunkId: string, chunkText: string, sections: SemanticSectionProfile[]) {
+    let best: { sectionId: string; score: number } | null = null;
+
+    for (const section of sections) {
+      const r = await this.analyzer.calculateSimilarity({ chunkId, chunkText, section });
+      if (!best || r.score > best.score) best = { sectionId: r.sectionId, score: r.score };
+    }
+
+    return best;
+  }
+}
+```
+
+Composition root (create once, reuse):
+
+```ts
+import { RealSemanticAnalyzer, SemanticAnalyzerProxy } from "./semantic";
+
+const semanticAnalyzer = new SemanticAnalyzerProxy(new RealSemanticAnalyzer(), {
+  enableLogging: true,
+});
+
+// inject semanticAnalyzer into services/classes that need similarity
+```
+
+#### How to replicate this module in another project
+
+1. Create folder: [semantic](/src/services/semantic).
+2. Add [SemanticAnalyzer.ts](/src/services/semantic/SemanticAnalyzer.ts) with only:
+   - input types (`chunkId`, `chunkText`, `section`)
+   - result type (`chunkId`, `sectionId`, `score`, `source`)
+   - interface method `calculateSimilarity(...)`
+3. Add [RealSemanticAnalyzer.ts](/src/services/semantic/RealSemanticAnalyzer.ts):
+   - implements `SemanticAnalyzer`
+   - keep real model call isolated here
+4. Add [SemanticAnalyzerProxy.ts](/src/services/semantic/SemanticAnalyzerProxy.ts):
+   - constructor receives `SemanticAnalyzer`
+   - cache key = chunk + section + semantic fingerprint
+   - on hit: return cached value with `source: "cache"`
+   - on miss: call real analyzer, cache result, return it
+   - include `getMetrics()` and `clearCache()`
+5. Add [index.ts](/src/services/semantic/index.ts) barrel exports.
+6. Wire once in bootstrap/composition root and inject interface everywhere.
+
+#### Minimal contract to keep stable
+
+Do not break these unless you migrate all callers:
+
+- Interface name: `SemanticAnalyzer`
+- Method name: `calculateSimilarity`
+- Result fields: `chunkId`, `sectionId`, `score`, `source`
+- Proxy utility methods: `getMetrics`, `clearCache`
+
+#### Testing guidance
+
+- Unit tests for callers should use a fake `SemanticAnalyzer` (not the real class).
+- Proxy tests should verify:
+  - first call is miss + model call
+  - repeated call is hit + no extra model call
+  - metrics counters update correctly
+
+#### Notes for replacing placeholder AI logic
+
+When integrating a real AI provider, update only `RealSemanticAnalyzer` (or its `EmbeddingProvider`).
+Keep proxy and callers unchanged.
+
+
+
+### Reporting Bridge
+Use this module when you need the same report writer to produce multiple output formats.
+
+#### What to use
+Import from:
+
+```ts
+import {
+  DuaTemplateReportGenerator,
+  WordOutputFormatter,
+  PdfOutputFormatter,
+  HtmlOutputFormatter,
+  type OutputFormatter,
+} from "@/services/reporting";
+```
+
+#### Required flow in caller classes
+
+1. Map source data into `templateData`.
+2. Choose formatter (`word` | `pdf` | `html`).
+3. Create `DuaTemplateReportGenerator(formatter)`.
+4. Call `generate({ reportTitle, templateData })`.
+5. Return/store the generated output.
+
+#### Reference integration
+
+```ts
+import {
+  DuaTemplateReportGenerator,
+  HtmlOutputFormatter,
+  PdfOutputFormatter,
+  WordOutputFormatter,
+  type OutputFormatter,
+} from "@/services/reporting";
+
+type OutputKind = "word" | "pdf" | "html";
+
+export class ReportApplicationService {
+  generateDuaReport(output: OutputKind, templateData: unknown) {
+    const formatter = this.createFormatter(output);
+    const generator = new DuaTemplateReportGenerator(formatter);
+
+    return generator.generate({
+      reportTitle: "DUA generado",
+      templateData,
+    });
+  }
+
+  private createFormatter(output: OutputKind): OutputFormatter {
+    if (output === "word") return new WordOutputFormatter();
+    if (output === "pdf") return new PdfOutputFormatter();
+    return new HtmlOutputFormatter();
+  }
+}
+```
+
+#### How to replicate for another report type
+
+Create a new generator class in this folder, extending `ReportGenerator` and implementing only `buildSections`:
+
+```ts
+import { ReportGenerator } from "./ReportGenerator";
+import type { ReportSection } from "./OutputFormatter";
+
+export class AnotherTemplateReportGenerator extends ReportGenerator {
+  protected buildSections(templateData: unknown): ReportSection[] {
+    // Placeholder or real mapping logic
+    return [
+      { id: "s1", title: "Section 1", body: "TODO" },
+    ];
+  }
+}
+```
+
+Then reuse existing formatters, or add a new formatter implementation.
+
+#### How to add a new output format
+
+1. Add a formatter file implementing `OutputFormatter`.
+2. Add new format literal to `OutputFormat` in `OutputFormatter.ts`.
+3. Export the formatter in `index.ts`.
+4. Add selection logic in caller service (`createFormatter`).
+
+Minimal formatter template:
+
+```ts
+import type { GeneratedOutput, OutputFormatter, ReportSection } from "./OutputFormatter";
+
+export class MarkdownOutputFormatter implements OutputFormatter {
+  private parts: string[] = [];
+
+  startDocument(reportTitle: string): void {
+    this.parts = [`# ${reportTitle}`];
+  }
+
+  writeSection(section: ReportSection): void {
+    this.parts.push(`## ${section.title}`);
+    this.parts.push(section.body);
+  }
+
+  finalizeDocument(): GeneratedOutput {
+    return {
+      format: "markdown",
+      content: this.parts.join("\n\n"),
+    };
+  }
+}
+```
+
+#### Current placeholders
+- `DuaTemplateReportGenerator.buildSections(...)` contains placeholder mapping logic.
+- Output formatters currently return string content placeholders (no real Word/PDF engine yet).
+
+### Strategy (Unauthorized Handling)
+This file explains how to reuse the strategy-based unauthorized/session protection implementation.
+
+#### Reference files
+
+- [httpInterceptors.ts](/src/services/httpInterceptors.ts)
+- [unauthorizedHandlingStrategy.ts](/src/services/unauthorizedHandlingStrategy.ts)
+
+- Fixed:
+  - Consumers still call `interceptHttpResponse(...)` the same way.
+  - `handleUnauthorized` option still gates 401 handling.
+- Swappable:
+  - 401 unauthorized behavior is resolved through a strategy (`UnauthorizedHandlingStrategy`).
+
+#### Contract to follow
+
+Implement this interface:
+
+```ts
+export interface UnauthorizedHandlingStrategy {
+  readonly name: string;
+  shouldHandle(input: UnauthorizedHandlingInput): boolean;
+  handle(input: UnauthorizedHandlingInput): void;
+}
+```
+
+#### Current default strategy (HTTP-only cookie flow)
+
+- Class: `HttpOnlyCookieUnauthorizedHandlingStrategy`
+- Behavior:
+  - Skips auth bootstrap endpoints (`/api/auth/login|refresh|forgot-password|reset-password`)
+  - Calls `sessionManager.handleUnauthorized()`
+- This preserves the existing cookie-based session flow.
+
+#### How to add a new mechanism
+
+1. Create a new class implementing `UnauthorizedHandlingStrategy` in `src/services/unauthorizedHandlingStrategy.ts` (or a sibling strategy file).
+2. Keep `shouldHandle(...)` and `handle(...)` methods, even if logic is placeholder at first.
+3. Register globally when needed:
+
+```ts
+setUnauthorizedHandlingStrategy(new YourUnauthorizedHandlingStrategy());
+```
+
+4. Optional per-call override (without changing existing consumers):
+
+```ts
+interceptHttpResponse(response, request, {
+  handleUnauthorized: true,
+  unauthorizedStrategy: new YourUnauthorizedHandlingStrategy(),
+});
+```
+
+#### Minimal template for future strategies
+
+```ts
+class YourUnauthorizedHandlingStrategy implements UnauthorizedHandlingStrategy {
+  readonly name = "your-strategy-name";
+
+  shouldHandle({ request }: UnauthorizedHandlingInput) {
+    // placeholder
+    return true;
+  }
+
+  handle({ request }: UnauthorizedHandlingInput) {
+    // placeholder
+  }
+}
+```
+
+#### Guardrails for agents
+
+- Do not call `sessionManager.handleUnauthorized()` directly from `httpInterceptors.ts`.
+- Keep 401 decision + execution inside strategy methods.
+- Keep the default strategy as HTTP-only cookie session behavior.
+- Add new behavior by adding/replacing strategy implementations, not by changing interceptor consumers.
+
+### Facade Pattern Runbook (Hooks -> Auth + HTTP)
+Expose a single service access surface for hooks while keeping auth and HTTP implementation details behind facades.
+
+#### Files to keep aligned
+
+- [client.ts](/src/services/client.ts)
+- [authService.ts](/src/auth/authService.ts)
+- [applicationFacade.ts](/src/services/applicationFacade.ts)
+- [useApplicationServices.ts](/src/components/hooks/useApplicationServices.ts)
+- [useLogin.ts](/src/components/hooks/useLogin.ts)
+- [useLogout.ts](/src/components/hooks/useLogout.ts)
+
+#### Contracts
+
+1. HTTP facade contract [client.ts](/src/services/client.ts)
+```ts
+export interface HttpClientFacade {
+  fetch(input: string, init?: RequestInit): Promise<Response>;
+  authFetch(input: string, init?: RequestInit): Promise<Response>;
+  json<T>(input: string, init?: RequestInit): Promise<T>;
+  authJson<T>(input: string, init?: RequestInit): Promise<T>;
+  // source/external helpers as needed
+}
+```
+
+2. Auth facade contract [authService.ts](/src/auth/authService.ts)
+```ts
+export interface AuthServiceFacade {
+  login(input: LoginInput): Promise<AuthSession | null>;
+  logout(): Promise<void>;
+  refreshSession(): Promise<AuthSession | null>;
+  requestPasswordReset(email: string, redirectTo?: string): Promise<void>;
+  resetPassword(accessToken: string, refreshToken: string, newPassword: string): Promise<void>;
+  getCurrentSession(): Promise<AuthSession | null>;
+  isAuthServiceError(reason: unknown): reason is AuthServiceError;
+  isNoTenantAccessError(reason: unknown): reason is NoTenantAccessError;
+  toErrorMessage(reason: unknown, fallbackMessage?: string): string;
+}
+```
+
+3. App facade contract [applicationFacade.ts](/src/services/applicationFacade.ts)
+```ts
+export interface ApplicationServiceFacade {
+  readonly auth: AuthServiceFacade;
+  readonly http: HttpClientFacade;
+}
+```
+
+#### Implementation Steps
+
+1. In [client.ts](/src/services/client.ts), keep low-level source client behavior intact, add `HttpClientFacade`, and export a singleton (`httpClientFacade`).
+2. Keep legacy function exports (`apiFetch`, `authFetch`, etc.) but make them delegate to `httpClientFacade` for backward compatibility.
+3. In [authService.ts](/src/auth/authService.ts), replace direct low-level client imports with `httpClientFacade`.
+4. Add `AuthServiceFacade` + singleton (`authServiceFacade`) that delegates to `authService` and centralizes auth error guards.
+5. Add [applicationFacade.ts](/src/services/applicationFacade.ts) that composes `authServiceFacade` and `httpClientFacade`.
+6. Add [useApplicationServices.ts](/src/components/hooks/useApplicationServices.ts) and return the app facade singleton.
+7. Update hooks to consume `useApplicationServices()` instead of importing auth/http services directly.
+
+#### Placeholder Rule
+
+When adding a new operation, add it to the relevant facade interface first, then implement a passthrough or placeholder body (`Promise.resolve(...)`) until business logic is ready.
+
+#### Checklist for New Agents
+
+- Hooks import only `useApplicationServices` for service access.
+- `authService.ts` only uses HTTP via `httpClientFacade`.
+- [client.ts](/src/services/client.ts) exposes one facade entrypoint and keeps legacy helpers as delegates.
+- New domains are added by extending facades, not by importing low-level clients in hooks.
+
+
+### Not implemented (pending)
+- Use Builder Pattern and Strategy Pattern to create and compose heterogeneous DUA document processors (docx, xlsx, pdf, jpg, png) from application hooks, centralizing format-processing abstractions and keeping UI orchestration in [src/components/hooks](/src/components/hooks).
   ```ts
   interface ProcessorStrategy {
     process(file: File): Promise<Record<string, string>>;
@@ -1204,41 +1785,6 @@ Common violations: primitive components importing services, services using React
     constructor(private strategy: ProcessorStrategy) {}
     async run(file: File) { return this.strategy.process(file); }
   }
-  ```
-
-- Use Observer Pattern so long-running DUA generation progress is pushed reactively from subscribed hook state to the progress view without blocking the UI, using the application hook layer in [src/components/hooks](src/components/hooks).
-  ```ts
-  const unsubscribe = generationStore.subscribe((state) => {
-    setProgress(state.percentage);
-  });
-  // call unsubscribe() on unmount
-  ```
-
-- Singleton for shared infrastructure instances: api client registry, auth service instance, logger, and error handler; for session state, use one root-mounted SessionProvider instance by architectural convention as the single source of truth, avoiding duplicated ownership with AuthProvider in [src/state/SessionProvider.tsx](src/state/SessionProvider.tsx) and [src/AppProviders.tsx](src/AppProviders.tsx).
-  ```ts
-  class Logger {
-    private static instance: Logger;
-    static getInstance() { return this.instance ??= new Logger(); }
-    info(message: string) { console.log(message); }
-  }
-  export const logger = Logger.getInstance();
-  ```
-
-- Use Strategy Pattern in token/session protection so unauthorized handling is interchangeable inside interceptors, preserving the current HTTP-only cookie flow while allowing future mechanisms without changing consumers in [src/services/httpInterceptors.ts](src/services/httpInterceptors.ts).
-  ```ts
-  interface UnauthorizedStrategy { handle(): void; }
-  class RedirectToLogin implements UnauthorizedStrategy {
-    handle() { sessionManager.handleUnauthorized(); }
-  }
-  ```
-
-- Use Facade Pattern to expose a unified service access surface from application hooks to auth and HTTP operations, reducing multi-client coupling in [src/components/hooks](src/components/hooks), [src/auth/authService.ts](src/auth/authService.ts), and [src/services/client.ts](src/services/client.ts).
-  ```ts
-  export const authFacade = {
-    login: (payload: LoginRequest) => authService.login(payload),
-    logout: () => authService.logout(),
-    me: () => authService.getCurrentSession(),
-  };
   ```
 
 - Use Adapter Pattern for Word document field replacement by format type (ParagraphAdapter, TableAdapter, LabelAdapter, AmountAdapter) in the backend document-generation service, since this concern is not currently implemented in frontend services.
@@ -1254,91 +1800,92 @@ The `/src` folder contains the application scaffold organized by architectural l
 
 ```
 src
- ├ AppProviders.tsx
- ├ main.tsx
- │
- ├ auth/
- │   ├ auth-schemas.ts
- │   ├ AuthProvider.tsx
- │   ├ authService.ts
- │   ├ guards/
- │   │   ├ AuthGuard.tsx
- │   │   ├ GuestGuard.tsx
- │   │   └ PolicyGuard.tsx
- │   └ policies/
- │       ├ accessPolicy.ts
- │       ├ permissions.ts
- │       ├ rolePermissions.ts
- │       └ roles.ts
- │
- ├ components/
- │   ├ atoms/
- │   │   ├ ImageWithFallback.tsx
- │   │   ├ language-switcher.tsx
- │   │   ├ theme-switcher.tsx
- │   │   └ ui/
- │   │       ├ accordion.tsx
- │   │       ├ alert.tsx
- │   │       ├ button.tsx
- │   │       ├ dialog.tsx
- │   │       └ ... (20+ shadcn/ui components)
- │   │
- │   ├ molecules/
- │   │   ├ app-error-boundary.tsx
- │   │   └ info-banner.tsx
- │   │
- │   ├ organisms/
- │   │   ├ homePageLayout.tsx
- │   │   └ homePageLayout.css
- │   │
- │   ├ hooks/
- │   │   ├ useLogin.ts
- │   │   ├ useLogout.ts
- │   │   ├ usePermissions.ts
- │   │   ├ usePolicies.ts
- │   │   ├ useSession.ts
- │   │   └ useTheme.ts
- │   │
- │   ├ i18n/
- │   │   ├ config.ts
- │   │   ├ I18nProvider.tsx
- │   │   ├ en.json
- │   │   └ es.json
- │   │
- │   └ styles/
- │       ├ breakpoints.ts
- │       ├ globals.css
- │       ├ theme.ts
- │       ├ ThemeProvider.tsx
- │       └ tokens.ts
- │
- ├ models/
- │   ├ app-error.ts
- │   ├ common-schemas.ts
- │   └ loginRequest-schema.ts
- │
- ├ routes/
- │   ├ AppRouter.tsx
- │   └ routeConfig.ts
- │
- ├ services/
- │   ├ client.ts
- │   └ httpInterceptors.ts
- │
- ├ state/
- │   ├ session.types.ts
- │   ├ sessionManager.ts
- │   ├ SessionProvider.tsx
- │   └ sessionStore.ts
- │
- └ utils/
-     ├ error-handler.ts
-     ├ logger.ts
-     ├ schemaValidator.ts
-     └ sessionManager.ts
+ â”œ AppProviders.tsx
+ â”œ main.tsx
+ â”‚
+ â”œ auth/
+ â”‚   â”œ auth-schemas.ts
+ â”‚   â”œ AuthProvider.tsx
+ â”‚   â”œ authService.ts
+ â”‚   â”œ guards/
+ â”‚   â”‚   â”œ AuthGuard.tsx
+ â”‚   â”‚   â”œ GuestGuard.tsx
+ â”‚   â”‚   â”” PolicyGuard.tsx
+ â”‚   â”” policies/
+ â”‚       â”œ accessPolicy.ts
+ â”‚       â”œ permissions.ts
+ â”‚       â”œ rolePermissions.ts
+ â”‚       â”” roles.ts
+ â”‚
+ â”œ components/
+ â”‚   â”œ atoms/
+ â”‚   â”‚   â”œ ImageWithFallback.tsx
+ â”‚   â”‚   â”œ language-switcher.tsx
+ â”‚   â”‚   â”œ theme-switcher.tsx
+ â”‚   â”‚   â”” ui/
+ â”‚   â”‚       â”œ accordion.tsx
+ â”‚   â”‚       â”œ alert.tsx
+ â”‚   â”‚       â”œ button.tsx
+ â”‚   â”‚       â”œ dialog.tsx
+ â”‚   â”‚       â”” ... (20+ shadcn/ui components)
+ â”‚   â”‚
+ â”‚   â”œ molecules/
+ â”‚   â”‚   â”œ app-error-boundary.tsx
+ â”‚   â”‚   â”” info-banner.tsx
+ â”‚   â”‚
+ â”‚   â”œ organisms/
+ â”‚   â”‚   â”œ homePageLayout.tsx
+ â”‚   â”‚   â”” homePageLayout.css
+ â”‚   â”‚
+ â”‚   â”œ hooks/
+ â”‚   â”‚   â”œ useLogin.ts
+ â”‚   â”‚   â”œ useLogout.ts
+ â”‚   â”‚   â”œ usePermissions.ts
+ â”‚   â”‚   â”œ usePolicies.ts
+ â”‚   â”‚   â”œ useSession.ts
+ â”‚   â”‚   â”” useTheme.ts
+ â”‚   â”‚
+ â”‚   â”œ i18n/
+ â”‚   â”‚   â”œ config.ts
+ â”‚   â”‚   â”œ I18nProvider.tsx
+ â”‚   â”‚   â”œ en.json
+ â”‚   â”‚   â”” es.json
+ â”‚   â”‚
+ â”‚   â”” styles/
+ â”‚       â”œ breakpoints.ts
+ â”‚       â”œ globals.css
+ â”‚       â”œ theme.ts
+ â”‚       â”œ ThemeProvider.tsx
+ â”‚       â”” tokens.ts
+ â”‚
+ â”œ models/
+ â”‚   â”œ app-error.ts
+ â”‚   â”œ common-schemas.ts
+ â”‚   â”” loginRequest-schema.ts
+ â”‚
+ â”œ routes/
+ â”‚   â”œ AppRouter.tsx
+ â”‚   â”” routeConfig.ts
+ â”‚
+ â”œ services/
+ â”‚   â”œ client.ts
+ â”‚   â”” httpInterceptors.ts
+ â”‚
+ â”œ state/
+ â”‚   â”œ session.types.ts
+ â”‚   â”œ sessionManager.ts
+ â”‚   â”œ SessionProvider.tsx
+ â”‚   â”” sessionStore.ts
+ â”‚
+ â”” utils/
+     â”œ error-handler.ts
+     â”œ logger.ts
+     â”œ schemaValidator.ts
+     â”” sessionManager.ts
 ```
 
 # 2. Backend Design
 
 # 3. Data Design
+
 

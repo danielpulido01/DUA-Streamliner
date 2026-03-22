@@ -9,7 +9,18 @@ export type ErrorMiddleware = (
 ) => void;
 
 class ErrorHandler {
+  private static instance: ErrorHandler | null = null;
   private middlewares: ErrorMiddleware[] = [];
+
+  static getInstance() {
+    if (!ErrorHandler.instance) {
+      ErrorHandler.instance = new ErrorHandler();
+    }
+
+    return ErrorHandler.instance;
+  }
+
+  private constructor() {}
 
   use(middleware: ErrorMiddleware) {
     this.middlewares.push(middleware);
@@ -56,7 +67,7 @@ const userNotificationMiddleware: ErrorMiddleware = (error, context, next) => {
   next();
 };
 
-export const errorHandler = new ErrorHandler();
+export const errorHandler = ErrorHandler.getInstance();
 errorHandler.use(logMiddleware);
 errorHandler.use(userNotificationMiddleware);
 

@@ -12,6 +12,18 @@ export interface LogStrategy {
 }
 
 export class ConsoleLogStrategy implements LogStrategy {
+  private static instance: ConsoleLogStrategy | null = null;
+
+  static getInstance() {
+    if (!ConsoleLogStrategy.instance) {
+      ConsoleLogStrategy.instance = new ConsoleLogStrategy();
+    }
+
+    return ConsoleLogStrategy.instance;
+  }
+
+  private constructor() {}
+
   log(event: LogEvent): void {
     const prefix = `[${event.timestamp}] ${event.level}`;
     const payload = event.data ? { message: event.message, ...event.data } : event.message;
@@ -39,16 +51,37 @@ export class ConsoleLogStrategy implements LogStrategy {
 }
 
 export class RemoteLogStrategy implements LogStrategy {
+  private static instance: RemoteLogStrategy | null = null;
+
+  static getInstance() {
+    if (!RemoteLogStrategy.instance) {
+      RemoteLogStrategy.instance = new RemoteLogStrategy();
+    }
+
+    return RemoteLogStrategy.instance;
+  }
+
+  private constructor() {}
+
   log(_event: LogEvent): void {
     // TODO: send to remote logging endpoint
   }
 }
 
 export class Logger {
+  private static instance: Logger | null = null;
   private strategies: LogStrategy[];
 
-  constructor(strategies: LogStrategy[]) {
+  private constructor(strategies: LogStrategy[]) {
     this.strategies = strategies;
+  }
+
+  static getInstance(strategies: LogStrategy[] = [ConsoleLogStrategy.getInstance()]) {
+    if (!Logger.instance) {
+      Logger.instance = new Logger(strategies);
+    }
+
+    return Logger.instance;
   }
 
   setStrategies(strategies: LogStrategy[]) {
@@ -89,5 +122,5 @@ export class Logger {
   }
 }
 
-export const logger = new Logger([new ConsoleLogStrategy()]);
+export const logger = Logger.getInstance();
 

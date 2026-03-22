@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { AuthServiceError, NoTenantAccessError, authService } from "../../auth/authService";
 import { useSession } from "./useSession";
+import { useApplicationServices } from "./useApplicationServices";
 
 type LoginInput = {
   email: string;
@@ -8,6 +8,7 @@ type LoginInput = {
 };
 
 export function useLogin() {
+  const { auth } = useApplicationServices();
   const { setSession } = useSession();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -17,7 +18,7 @@ export function useLogin() {
     setIsLoading(true);
 
     try {
-      const session = await authService.login(input);
+      const session = await auth.login(input);
       if (!session) {
         setError("No active session was returned by the server.");
         return false;
@@ -26,17 +27,17 @@ export function useLogin() {
       setSession(session);
       return true;
     } catch (reason) {
-      if (reason instanceof NoTenantAccessError) {
+      if (auth.isNoTenantAccessError(reason)) {
         setError("Your account has no assigned tenant access.");
         return false;
       }
 
-      if (reason instanceof AuthServiceError) {
-        setError(reason.message || "Login failed.");
+      if (auth.isAuthServiceError(reason)) {
+        setError(auth.toErrorMessage(reason, "Login failed."));
         return false;
       }
 
-      setError("Login failed.");
+      setError(auth.toErrorMessage(reason, "Login failed."));
       return false;
     } finally {
       setIsLoading(false);

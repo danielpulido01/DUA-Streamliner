@@ -340,17 +340,113 @@ registerApiSource(EXTERNAL_API_SOURCE, {
 
 const backendClient = getApiSourceClient(BACKEND_API_SOURCE);
 
+export interface HttpClientFacade {
+  registerSource(source: ApiSourceName, config: ApiSourceConfig): ApiSourceClient;
+  source(source: ApiSourceName): ApiSourceClient;
+  buildApiUrl(path: string): string;
+  buildExternalApiUrl(path: string): string;
+  fetch(input: string, init?: RequestInit): Promise<Response>;
+  authFetch(input: string, init?: RequestInit): Promise<Response>;
+  json<T>(input: string, init?: RequestInit): Promise<T>;
+  authJson<T>(input: string, init?: RequestInit): Promise<T>;
+  jsonWithSchema<TSchema extends ZodTypeAny>(
+    input: string,
+    schema: TSchema,
+    init?: RequestInit,
+  ): Promise<TSchema["_output"]>;
+  authJsonWithSchema<TSchema extends ZodTypeAny>(
+    input: string,
+    schema: TSchema,
+    init?: RequestInit,
+  ): Promise<TSchema["_output"]>;
+  externalFetch(input: string, init?: RequestInit): Promise<Response>;
+  externalJson<T>(input: string, init?: RequestInit): Promise<T>;
+  externalJsonWithSchema<TSchema extends ZodTypeAny>(
+    input: string,
+    schema: TSchema,
+    init?: RequestInit,
+  ): Promise<TSchema["_output"]>;
+}
+
+class DefaultHttpClientFacade implements HttpClientFacade {
+  private static instance: DefaultHttpClientFacade | null = null;
+
+  static getInstance() {
+    if (!DefaultHttpClientFacade.instance) {
+      DefaultHttpClientFacade.instance = new DefaultHttpClientFacade();
+    }
+
+    return DefaultHttpClientFacade.instance;
+  }
+
+  private constructor() {}
+
+  registerSource(source: ApiSourceName, config: ApiSourceConfig) {
+    return registerApiSource(source, config);
+  }
+
+  source(source: ApiSourceName) {
+    return getApiSourceClient(source);
+  }
+
+  buildApiUrl(path: string) {
+    return backendClient.buildUrl(path);
+  }
+
+  buildExternalApiUrl(path: string) {
+    return getApiSourceClient(EXTERNAL_API_SOURCE).buildUrl(path);
+  }
+
+  fetch(input: string, init: RequestInit = {}) {
+    return getApiSourceClient(BACKEND_API_SOURCE).fetch(input, init);
+  }
+
+  authFetch(input: string, init: RequestInit = {}) {
+    return getApiSourceClient(BACKEND_API_SOURCE).authFetch(input, init);
+  }
+
+  json<T>(input: string, init: RequestInit = {}) {
+    return getApiSourceClient(BACKEND_API_SOURCE).json<T>(input, init);
+  }
+
+  authJson<T>(input: string, init: RequestInit = {}) {
+    return getApiSourceClient(BACKEND_API_SOURCE).authJson<T>(input, init);
+  }
+
+  jsonWithSchema<TSchema extends ZodTypeAny>(input: string, schema: TSchema, init: RequestInit = {}) {
+    return getApiSourceClient(BACKEND_API_SOURCE).jsonWithSchema(input, schema, init);
+  }
+
+  authJsonWithSchema<TSchema extends ZodTypeAny>(input: string, schema: TSchema, init: RequestInit = {}) {
+    return getApiSourceClient(BACKEND_API_SOURCE).authJsonWithSchema(input, schema, init);
+  }
+
+  externalFetch(input: string, init: RequestInit = {}) {
+    return getApiSourceClient(EXTERNAL_API_SOURCE).fetch(input, init);
+  }
+
+  externalJson<T>(input: string, init: RequestInit = {}) {
+    return getApiSourceClient(EXTERNAL_API_SOURCE).json<T>(input, init);
+  }
+
+  externalJsonWithSchema<TSchema extends ZodTypeAny>(input: string, schema: TSchema, init: RequestInit = {}) {
+    return getApiSourceClient(EXTERNAL_API_SOURCE).jsonWithSchema(input, schema, init);
+  }
+}
+
+export const httpClientFacade = DefaultHttpClientFacade.getInstance();
+
 export const apiProxy = {
-  registerSource: registerApiSource,
-  source: getApiSourceClient,
+  registerSource: (source: ApiSourceName, config: ApiSourceConfig) => httpClientFacade.registerSource(source, config),
+  source: (source: ApiSourceName) => httpClientFacade.source(source),
 };
 
 export function buildApiUrl(path: string) {
-  return backendClient.buildUrl(path);
+  return httpClientFacade.buildApiUrl(path);
 }
 
 export function buildExternalApiUrl(path: string) {
-  return getApiSourceClient(EXTERNAL_API_SOURCE).buildUrl(path);
+  return httpClientFacade.buildExternalApiUrl(path);
 }
 
 export function sourceFetch(source: ApiSourceName, input: string, init: RequestInit = {}) {
@@ -388,23 +484,23 @@ export function sourceAuthJsonWithSchema<TSchema extends ZodTypeAny>(
 }
 
 export function apiFetch(input: string, init: RequestInit = {}) {
-  return sourceFetch(BACKEND_API_SOURCE, input, init);
+  return httpClientFacade.fetch(input, init);
 }
 
 export function authFetch(input: string, init: RequestInit = {}) {
-  return sourceAuthFetch(BACKEND_API_SOURCE, input, init);
+  return httpClientFacade.authFetch(input, init);
 }
 
 export function apiJson<T>(input: string, init: RequestInit = {}) {
-  return sourceJson<T>(BACKEND_API_SOURCE, input, init);
+  return httpClientFacade.json<T>(input, init);
 }
 
 export function authJson<T>(input: string, init: RequestInit = {}) {
-  return sourceAuthJson<T>(BACKEND_API_SOURCE, input, init);
+  return httpClientFacade.authJson<T>(input, init);
 }
 
 export function apiJsonWithSchema<TSchema extends ZodTypeAny>(input: string, schema: TSchema, init: RequestInit = {}) {
-  return sourceJsonWithSchema(BACKEND_API_SOURCE, input, schema, init);
+  return httpClientFacade.jsonWithSchema(input, schema, init);
 }
 
 export function authJsonWithSchema<TSchema extends ZodTypeAny>(
@@ -412,15 +508,15 @@ export function authJsonWithSchema<TSchema extends ZodTypeAny>(
   schema: TSchema,
   init: RequestInit = {},
 ) {
-  return sourceAuthJsonWithSchema(BACKEND_API_SOURCE, input, schema, init);
+  return httpClientFacade.authJsonWithSchema(input, schema, init);
 }
 
 export function externalFetch(input: string, init: RequestInit = {}) {
-  return sourceFetch(EXTERNAL_API_SOURCE, input, init);
+  return httpClientFacade.externalFetch(input, init);
 }
 
 export function externalJson<T>(input: string, init: RequestInit = {}) {
-  return sourceJson<T>(EXTERNAL_API_SOURCE, input, init);
+  return httpClientFacade.externalJson<T>(input, init);
 }
 
 export function externalJsonWithSchema<TSchema extends ZodTypeAny>(
@@ -428,5 +524,5 @@ export function externalJsonWithSchema<TSchema extends ZodTypeAny>(
   schema: TSchema,
   init: RequestInit = {},
 ) {
-  return sourceJsonWithSchema(EXTERNAL_API_SOURCE, input, schema, init);
+  return httpClientFacade.externalJsonWithSchema(input, schema, init);
 }
