@@ -1191,6 +1191,587 @@ Common violations: primitive components importing services, services using React
 
 ## 1.6 Design patterns
 
+### Singleton
+The following classes use singleton pattern:
+- [logger.ts](/src/utils/logger.ts)
+  - `ConsoleLogStrategy`
+  - `RemoteLogStrategy`
+  - `Logger`
+- [error-handler.ts](/src/utils/error-handler.ts)
+  - `ErrorHandler`
+- [authService.ts](/src/auth/authService.ts)
+  - `AuthService`
+- [sessionManager.ts](/src/state/sessionManager.ts)
+  - `SessionManager`
+
+#### When to apply here
+Apply only if all are true:
+
+1. One shared instance is desired app-wide.
+2. Behavior must stay consistent across all consumers.
+3. Class should not be recreated with different runtime config per feature.
+
+#### Do not apply here
+
+Skip singleton for:
+
+- Error objects (`*Error` classes): create per error event.
+- React components (`*.tsx` class components): React manages lifecycle.
+- Per-operation mutable workers (report formatters/generators with internal buffers).
+- Classes expected to be composed with different options in tests/features (for example semantic analyzer implementations).
+- `SourceHttpClient`: managed as per-source registry (multiton), not one global instance.
+
+#### Implementation recipe
+
+For a candidate class, implement this exact structure:
+
+```ts
+export class MyService {
+  private static instance: MyService | null = null;
+
+  static getInstance() {
+    if (!MyService.instance) {
+      MyService.instance = new MyService();
+    }
+    return MyService.instance;
+  }
+
+  private constructor() {}
+
+  // existing methods...
+}
+
+export const myService = MyService.getInstance();
+```
+
+#### If constructor currently takes dependencies
+
+Use lazy default dependencies inside `getInstance()` and keep one public exported instance.
+
+```ts
+static getInstance(dep: Dep = defaultDep) {
+  if (!X.instance) {
+    X.instance = new X(dep);
+  }
+  return X.instance;
+}
+```
+
+#### Migration steps for a new class
+
+1. Add `private static instance` field.
+2. Add `static getInstance(...)`.
+3. Make constructor `private`.
+4. Replace exported `new ClassName(...)` with `ClassName.getInstance(...)`.
+5. Keep existing exported constant name to avoid call-site churn.
+
+#### Quick checks before finishing
+
+Run:
+
+```powershell
+rg -n "new ClassName\(" src -S
+```
+
+Expected: only the `new ClassName(...)` inside `getInstance()` remains.
+
+Also verify no existing consumers were forced to import the class directly when they were using the exported instance constant.
+
+
+### Observer
+Use these files as the canonical pattern:
+
+- [generation.types.ts](/src/state/generation.types.ts)
+- [generationProgressStore.ts](/src/state/generationProgressStore.ts)
+- [generationManager.ts](/src/state/generationManager.ts)
+- [useGenerationProgress.ts](/src/state/useGenerationProgress.ts)
+- [useDuaGeneration.ts](/src/state/useDuaGeneration.ts)
+- [GenerationProgressPage.tsx](/src/components/pages/GenerationProgressPage.tsx)
+
+#### 1) State Contract (`*.types.ts`)
+
+Define:
+
+- Progress phases
+- Run state (`idle`, `running`, `completed`, etc.)
+- Progress snapshot shape
+- `createInitial...State()` factory
+
+Rule: keep this file purely declarative (types + initializer).
+
+#### 2) Observable Store (`*Store.ts`)
+
+Must expose:
+
+- `getState()`
+- `subscribe(listener) => unsubscribe`
+- `setState(next)`
+- `patchState(partial)`
+- `reset()`
+
+Rule: listeners are stored in a `Set`, and `subscribe` must emit current state immediately.
+
+#### 3) Manager/Publisher (`*Manager.ts`)
+
+Must expose:
+
+- `start...()` to begin async work
+- `cancel...()` (optional but recommended)
+- `subscribe(...)` pass-through to store
+- `get...Snapshot()` pass-through to store
+
+Rule: start work asynchronously (`void this.run...()`) so UI thread is not blocked.
+
+Business logic methods should be isolated and replaceable:
+
+- `prepare...()` placeholder
+- `persist...()` placeholder
+
+#### 4) Subscriber Hook (`use...Progress.ts`)
+
+Hook responsibilities:
+
+- seed state from manager snapshot
+- subscribe on mount
+- unsubscribe on unmount
+- return current state only
+
+Rule: no business logic inside subscriber hook.
+
+#### 5) Action Hook (`use...Generation.ts` or similar)
+
+Hook responsibilities:
+
+- expose `start...()` / `cancel...()`
+- hold local start/cancel errors and loading flags
+- delegate execution to manager
+
+Rule: this hook is orchestration-facing, not rendering-facing.
+
+#### 6) View Component
+
+Responsibilities:
+
+- read progress from subscriber hook
+- trigger actions via action hook
+- render status/progress/errors
+
+Rule: no direct service/store calls in view.
+
+#### Reuse Steps For New Flows
+
+When implementing another long-running workflow (example: import, analysis, export):
+
+1. Copy and rename the 3 state files (`types`, `store`, `manager`).
+2. Replace phase names and status texts.
+3. Keep the same observer API (`subscribe/getState/patchState`).
+4. Create two hooks:
+   - one subscriber hook (`useXProgress`)
+   - one action hook (`useXActions` or `useXGeneration`)
+5. Wire a page/view to those hooks only.
+6. Replace placeholder methods with real business logic later.
+
+#### Minimal Agent Checklist
+
+Before marking work complete, ensure:
+
+- [ ] Store has unsubscribe support.
+- [ ] `subscribe` emits snapshot immediately.
+- [ ] Manager starts async work without blocking render.
+- [ ] Progress updates are pushed through store (not polled in view).
+- [ ] Hooks are the only interface used by UI.
+- [ ] Placeholders are isolated for future real logic.
+
+#### Agent Copy Template
+
+```ts
+// store
+type Listener<T> = (state: T) => void;
+class XStore {
+  private listeners = new Set<Listener<XState>>();
+  private state: XState = createInitialXState();
+  getState() { return this.state; }
+  subscribe(listener: Listener<XState>) {
+    this.listeners.add(listener);
+    listener(this.state);
+    return () => this.listeners.delete(listener);
+  }
+  patchState(partial: Partial<XState>) {
+    this.state = { ...this.state, ...partial };
+    for (const listener of this.listeners) listener(this.state);
+  }
+}
+```
+
+```ts
+// manager
+async function startX() {
+  store.patchState({ runState: "running" });
+  void runXAsync(); // non-blocking kickoff
+}
+```
+
+```ts
+// progress hook
+function useXProgress() {
+  const [state, setState] = useState(() => manager.getSnapshot());
+  useEffect(() => manager.subscribe(setState), []);
+  return state;
+}
+```
+
+### Proxy
+[semantic](/src/services/semantic)
+- [SemanticAnalyzer.ts](/src/services/semantic/SemanticAnalyzer.ts)
+  - Interface: `SemanticAnalyzer`
+  - Method: `calculateSimilarity(input) => Promise<SemanticSimilarityResult>`
+- [RealSemanticAnalyzer.ts](/src/services/semantic/RealSemanticAnalyzer.ts)
+  - Class: `RealSemanticAnalyzer implements SemanticAnalyzer`
+  - Optional constructor dependency: `EmbeddingProvider`
+- [SemanticAnalyzerProxy.ts](/src/services/semantic/SemanticAnalyzerProxy.ts)
+  - Class: `SemanticAnalyzerProxy implements SemanticAnalyzer`
+  - Extra methods: `getMetrics()`, `clearCache()`
+- [index.ts](/src/services/semantic/index.ts)
+  - Barrel exports for all public types/classes
+
+#### How to use in other classes
+1. Depend on the interface (`SemanticAnalyzer`).
+2. Inject one shared analyzer instance (use proxy in runtime).
+3. Call `calculateSimilarity` for each `(chunk, section)` pair.
+
+```ts
+import type { SemanticAnalyzer, SemanticSectionProfile } from "./semantic";
+
+export class ChunkClassifier {
+  constructor(private readonly analyzer: SemanticAnalyzer) {}
+
+  async bestMatch(chunkId: string, chunkText: string, sections: SemanticSectionProfile[]) {
+    let best: { sectionId: string; score: number } | null = null;
+
+    for (const section of sections) {
+      const r = await this.analyzer.calculateSimilarity({ chunkId, chunkText, section });
+      if (!best || r.score > best.score) best = { sectionId: r.sectionId, score: r.score };
+    }
+
+    return best;
+  }
+}
+```
+
+Composition root (create once, reuse):
+
+```ts
+import { RealSemanticAnalyzer, SemanticAnalyzerProxy } from "./semantic";
+
+const semanticAnalyzer = new SemanticAnalyzerProxy(new RealSemanticAnalyzer(), {
+  enableLogging: true,
+});
+
+// inject semanticAnalyzer into services/classes that need similarity
+```
+
+#### How to replicate this module in another project
+
+1. Create folder: [semantic](/src/services/semantic).
+2. Add [SemanticAnalyzer.ts](/src/services/semantic/SemanticAnalyzer.ts) with only:
+   - input types (`chunkId`, `chunkText`, `section`)
+   - result type (`chunkId`, `sectionId`, `score`, `source`)
+   - interface method `calculateSimilarity(...)`
+3. Add [RealSemanticAnalyzer.ts](/src/services/semantic/RealSemanticAnalyzer.ts):
+   - implements `SemanticAnalyzer`
+   - keep real model call isolated here
+4. Add [SemanticAnalyzerProxy.ts](/src/services/semantic/SemanticAnalyzerProxy.ts):
+   - constructor receives `SemanticAnalyzer`
+   - cache key = chunk + section + semantic fingerprint
+   - on hit: return cached value with `source: "cache"`
+   - on miss: call real analyzer, cache result, return it
+   - include `getMetrics()` and `clearCache()`
+5. Add [index.ts](/src/services/semantic/index.ts) barrel exports.
+6. Wire once in bootstrap/composition root and inject interface everywhere.
+
+#### Minimal contract to keep stable
+
+Do not break these unless you migrate all callers:
+
+- Interface name: `SemanticAnalyzer`
+- Method name: `calculateSimilarity`
+- Result fields: `chunkId`, `sectionId`, `score`, `source`
+- Proxy utility methods: `getMetrics`, `clearCache`
+
+#### Testing guidance
+
+- Unit tests for callers should use a fake `SemanticAnalyzer` (not the real class).
+- Proxy tests should verify:
+  - first call is miss + model call
+  - repeated call is hit + no extra model call
+  - metrics counters update correctly
+
+#### Notes for replacing placeholder AI logic
+
+When integrating a real AI provider, update only `RealSemanticAnalyzer` (or its `EmbeddingProvider`).
+Keep proxy and callers unchanged.
+
+
+
+### Reporting Bridge
+Use this module when you need the same report writer to produce multiple output formats.
+
+#### What to use
+Import from:
+
+```ts
+import {
+  DuaTemplateReportGenerator,
+  WordOutputFormatter,
+  PdfOutputFormatter,
+  HtmlOutputFormatter,
+  type OutputFormatter,
+} from "@/services/reporting";
+```
+
+#### Required flow in caller classes
+
+1. Map source data into `templateData`.
+2. Choose formatter (`word` | `pdf` | `html`).
+3. Create `DuaTemplateReportGenerator(formatter)`.
+4. Call `generate({ reportTitle, templateData })`.
+5. Return/store the generated output.
+
+#### Reference integration
+
+```ts
+import {
+  DuaTemplateReportGenerator,
+  HtmlOutputFormatter,
+  PdfOutputFormatter,
+  WordOutputFormatter,
+  type OutputFormatter,
+} from "@/services/reporting";
+
+type OutputKind = "word" | "pdf" | "html";
+
+export class ReportApplicationService {
+  generateDuaReport(output: OutputKind, templateData: unknown) {
+    const formatter = this.createFormatter(output);
+    const generator = new DuaTemplateReportGenerator(formatter);
+
+    return generator.generate({
+      reportTitle: "DUA generado",
+      templateData,
+    });
+  }
+
+  private createFormatter(output: OutputKind): OutputFormatter {
+    if (output === "word") return new WordOutputFormatter();
+    if (output === "pdf") return new PdfOutputFormatter();
+    return new HtmlOutputFormatter();
+  }
+}
+```
+
+#### How to replicate for another report type
+
+Create a new generator class in this folder, extending `ReportGenerator` and implementing only `buildSections`:
+
+```ts
+import { ReportGenerator } from "./ReportGenerator";
+import type { ReportSection } from "./OutputFormatter";
+
+export class AnotherTemplateReportGenerator extends ReportGenerator {
+  protected buildSections(templateData: unknown): ReportSection[] {
+    // Placeholder or real mapping logic
+    return [
+      { id: "s1", title: "Section 1", body: "TODO" },
+    ];
+  }
+}
+```
+
+Then reuse existing formatters, or add a new formatter implementation.
+
+#### How to add a new output format
+
+1. Add a formatter file implementing `OutputFormatter`.
+2. Add new format literal to `OutputFormat` in `OutputFormatter.ts`.
+3. Export the formatter in `index.ts`.
+4. Add selection logic in caller service (`createFormatter`).
+
+Minimal formatter template:
+
+```ts
+import type { GeneratedOutput, OutputFormatter, ReportSection } from "./OutputFormatter";
+
+export class MarkdownOutputFormatter implements OutputFormatter {
+  private parts: string[] = [];
+
+  startDocument(reportTitle: string): void {
+    this.parts = [`# ${reportTitle}`];
+  }
+
+  writeSection(section: ReportSection): void {
+    this.parts.push(`## ${section.title}`);
+    this.parts.push(section.body);
+  }
+
+  finalizeDocument(): GeneratedOutput {
+    return {
+      format: "markdown",
+      content: this.parts.join("\n\n"),
+    };
+  }
+}
+```
+
+#### Current placeholders
+- `DuaTemplateReportGenerator.buildSections(...)` contains placeholder mapping logic.
+- Output formatters currently return string content placeholders (no real Word/PDF engine yet).
+
+### Strategy (Unauthorized Handling)
+This file explains how to reuse the strategy-based unauthorized/session protection implementation.
+
+#### Reference files
+
+- [httpInterceptors.ts](/src/services/httpInterceptors.ts)
+- [unauthorizedHandlingStrategy.ts](/src/services/unauthorizedHandlingStrategy.ts)
+
+- Fixed:
+  - Consumers still call `interceptHttpResponse(...)` the same way.
+  - `handleUnauthorized` option still gates 401 handling.
+- Swappable:
+  - 401 unauthorized behavior is resolved through a strategy (`UnauthorizedHandlingStrategy`).
+
+#### Contract to follow
+
+Implement this interface:
+
+```ts
+export interface UnauthorizedHandlingStrategy {
+  readonly name: string;
+  shouldHandle(input: UnauthorizedHandlingInput): boolean;
+  handle(input: UnauthorizedHandlingInput): void;
+}
+```
+
+#### Current default strategy (HTTP-only cookie flow)
+
+- Class: `HttpOnlyCookieUnauthorizedHandlingStrategy`
+- Behavior:
+  - Skips auth bootstrap endpoints (`/api/auth/login|refresh|forgot-password|reset-password`)
+  - Calls `sessionManager.handleUnauthorized()`
+- This preserves the existing cookie-based session flow.
+
+#### How to add a new mechanism
+
+1. Create a new class implementing `UnauthorizedHandlingStrategy` in `src/services/unauthorizedHandlingStrategy.ts` (or a sibling strategy file).
+2. Keep `shouldHandle(...)` and `handle(...)` methods, even if logic is placeholder at first.
+3. Register globally when needed:
+
+```ts
+setUnauthorizedHandlingStrategy(new YourUnauthorizedHandlingStrategy());
+```
+
+4. Optional per-call override (without changing existing consumers):
+
+```ts
+interceptHttpResponse(response, request, {
+  handleUnauthorized: true,
+  unauthorizedStrategy: new YourUnauthorizedHandlingStrategy(),
+});
+```
+
+#### Minimal template for future strategies
+
+```ts
+class YourUnauthorizedHandlingStrategy implements UnauthorizedHandlingStrategy {
+  readonly name = "your-strategy-name";
+
+  shouldHandle({ request }: UnauthorizedHandlingInput) {
+    // placeholder
+    return true;
+  }
+
+  handle({ request }: UnauthorizedHandlingInput) {
+    // placeholder
+  }
+}
+```
+
+#### Guardrails for agents
+
+- Do not call `sessionManager.handleUnauthorized()` directly from `httpInterceptors.ts`.
+- Keep 401 decision + execution inside strategy methods.
+- Keep the default strategy as HTTP-only cookie session behavior.
+- Add new behavior by adding/replacing strategy implementations, not by changing interceptor consumers.
+
+### Facade Pattern Runbook (Hooks -> Auth + HTTP)
+Expose a single service access surface for hooks while keeping auth and HTTP implementation details behind facades.
+
+#### Files to keep aligned
+
+- [client.ts](/src/services/client.ts)
+- [authService.ts](/src/services/authService.ts)
+- [applicationFacade.ts](/src/services/applicationFacade.ts)
+- [useApplicationServices.ts](/src/components/hooks/useApplicationServices.ts)
+- [useLogin.ts](/src/components/hooks/useLogin.ts)
+- [useLogout.ts](/src/components/hooks/useLogout.ts)
+
+#### Contracts
+
+1. HTTP facade contract [client.ts](/src/services/client.ts)
+```ts
+export interface HttpClientFacade {
+  fetch(input: string, init?: RequestInit): Promise<Response>;
+  authFetch(input: string, init?: RequestInit): Promise<Response>;
+  json<T>(input: string, init?: RequestInit): Promise<T>;
+  authJson<T>(input: string, init?: RequestInit): Promise<T>;
+  // source/external helpers as needed
+}
+```
+
+2. Auth facade contract [authService.ts](/src/services/authService.ts)
+```ts
+export interface AuthServiceFacade {
+  login(input: LoginInput): Promise<AuthSession | null>;
+  logout(): Promise<void>;
+  refreshSession(): Promise<AuthSession | null>;
+  getCurrentSession(): Promise<AuthSession | null>;
+  isAuthServiceError(reason: unknown): reason is AuthServiceError;
+  isNoTenantAccessError(reason: unknown): reason is NoTenantAccessError;
+  toErrorMessage(reason: unknown, fallbackMessage?: string): string;
+}
+```
+
+3. App facade contract [applicationFacade.ts](/src/services/applicationFacade.ts)
+```ts
+export interface ApplicationServiceFacade {
+  readonly auth: AuthServiceFacade;
+  readonly http: HttpClientFacade;
+}
+```
+
+#### Implementation Steps
+
+1. In [client.ts](/src/services/client.ts), keep low-level source client behavior intact, add `HttpClientFacade`, and export a singleton (`httpClientFacade`).
+2. Keep legacy function exports (`apiFetch`, `authFetch`, etc.) but make them delegate to `httpClientFacade` for backward compatibility.
+3. In [authService.ts](/src/services/authService.ts), replace direct low-level client imports with `httpClientFacade`.
+4. Add `AuthServiceFacade` + singleton (`authServiceFacade`) that delegates to `authService` and centralizes auth error guards.
+5. Add [applicationFacade.ts](/src/services/applicationFacade.ts) that composes `authServiceFacade` and `httpClientFacade`.
+6. Add [useApplicationServices.ts](/src/components/hooks/useApplicationServices.ts) and return the app facade singleton.
+7. Update hooks to consume `useApplicationServices()` instead of importing auth/http services directly.
+
+#### Placeholder Rule
+
+When adding a new operation, add it to the relevant facade interface first, then implement a passthrough or placeholder body (`Promise.resolve(...)`) until business logic is ready.
+
+#### Checklist for New Agents
+
+- Hooks import only `useApplicationServices` for service access.
+- `authService.ts` only uses HTTP via `httpClientFacade`.
+- [client.ts](/src/services/client.ts) exposes one facade entrypoint and keeps legacy helpers as delegates.
+- New domains are added by extending facades, not by importing low-level clients in hooks.
+
+
+### Not implemented (pending)
 - Use Builder Pattern and Strategy Pattern to create and compose heterogeneous DUA document processors (docx, xlsx, pdf, jpg, png) from application hooks, centralizing format-processing abstractions and keeping UI orchestration in [src/components/hooks](src/components/hooks).
   ```ts
   interface ProcessorStrategy {
@@ -1201,41 +1782,6 @@ Common violations: primitive components importing services, services using React
     constructor(private strategy: ProcessorStrategy) {}
     async run(file: File) { return this.strategy.process(file); }
   }
-  ```
-
-- Use Observer Pattern so long-running DUA generation progress is pushed reactively from subscribed hook state to the progress view without blocking the UI, using the application hook layer in [src/components/hooks](src/components/hooks).
-  ```ts
-  const unsubscribe = generationStore.subscribe((state) => {
-    setProgress(state.percentage);
-  });
-  // call unsubscribe() on unmount
-  ```
-
-- Singleton for shared infrastructure instances: api client registry, auth service instance, logger, and error handler; for session state, use one root-mounted SessionProvider instance by architectural convention as the single source of truth, avoiding duplicated ownership with AuthProvider in [src/state/SessionProvider.tsx](src/state/SessionProvider.tsx) and [src/AppProviders.tsx](src/AppProviders.tsx).
-  ```ts
-  class Logger {
-    private static instance: Logger;
-    static getInstance() { return this.instance ??= new Logger(); }
-    info(message: string) { console.log(message); }
-  }
-  export const logger = Logger.getInstance();
-  ```
-
-- Use Strategy Pattern in token/session protection so unauthorized handling is interchangeable inside interceptors, preserving the current HTTP-only cookie flow while allowing future mechanisms without changing consumers in [src/services/httpInterceptors.ts](src/services/httpInterceptors.ts).
-  ```ts
-  interface UnauthorizedStrategy { handle(): void; }
-  class RedirectToLogin implements UnauthorizedStrategy {
-    handle() { sessionManager.handleUnauthorized(); }
-  }
-  ```
-
-- Use Facade Pattern to expose a unified service access surface from application hooks to auth and HTTP operations, reducing multi-client coupling in [src/components/hooks](src/components/hooks), [src/auth/authService.ts](src/auth/authService.ts), and [src/services/client.ts](src/services/client.ts).
-  ```ts
-  export const authFacade = {
-    login: (payload: LoginRequest) => authService.login(payload),
-    logout: () => authService.logout(),
-    me: () => authService.getCurrentSession(),
-  };
   ```
 
 - Use Adapter Pattern for Word document field replacement by format type (ParagraphAdapter, TableAdapter, LabelAdapter, AmountAdapter) in the backend document-generation service, since this concern is not currently implemented in frontend services.
