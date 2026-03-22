@@ -1141,7 +1141,7 @@ The frontend uses a five-layer architecture with clear responsibilities and down
 
 **Architecture diagram:**
 
-![Frontend Layers](<media/Dua - Frontend Layers.png>)
+![Frontend Layers](<media/Diagrama-5-Capas.png>)
 
 
 **Layer 1 — Presentation:** UI components (primitives, composites, layouts, feature pages) render data and capture input. They do not call APIs directly. AppRouter and route guards protect navigation.
