@@ -1886,6 +1886,84 @@ src
 
 # 2. Backend Design
 
+## Technology Stack
+- REST API, HTTPS
+- Azure API Management + Azure App Service
+- API standard with Open API
+- For asyncronous operations and notifications use Azure Notification Hubs
+- No load balance required
+- API coding language .NET 10.0.102, ASP.NET Core
+- This is a monorepo solution, sharing the repository with the frontend, backend folder: duabusiness
+- Services
+
+## Security
+- HTTPS, algoritmo de encriptado que se va usar en la db
+- BD Azure SQL Database https://learn.microsoft.com/es-es/azure/azure-sql/database/security-overview?view=azuresql#transparent-data-encryption-encryption-at-rest-with-service-managed-keys en ese link viene lo del cifrado
+- payload size maximo general o hacer excepciones en ciertos endpoints
+- rate limit cantidad de conexiones concurrentes max
+- cuanto tiempo tengo la data en prod para luego pasarla a archive
+
+## Observability
+- esto lo pueden trabajar pues debe ir en sincronía con el FE
+- Lista de eventos que se van a registrar
+- Plataforma para registrar esos eventos
+- Herramienta para generar los dashboards de analisis
+
+## Infraestructure (devops)
+- Que herramienta controla las acctionces automatizadas desde el repositorio de codigo para CI CD,
+azure devops, github actions,
+- Con que herramienta hago el deployment a dev, stage y prod
+- Ej. dev kubernetes, stage y prod: cloudformation, terraform
+
+## Availability
+- Cuánto puede estar mi sistema offline en horas anuales? 
+- 99.99 uptime
+- Cuando ya tenga todo el technology stack, le pregunto a la AI cuales son single point of failure
+- Por cada elemento que se listo, debo averiguar que recovery o uptime ofrecen
+- Cualquier cosa que no logre dar la cantidad de 9s por defecto, hay que espeficicar coo se va a lograr el recovery
+
+
+## Scalability 
+- Qué elementos de la arquitectura crecen cuando crece los cantidad de request por minuto
+
+
+## Backend key workflows 
+- esto lo pueden ir trabajando 
+
+### Upload files to generate dua
+1. The backend receive the list of files to be uploaded 
+2. Open a streaming transfer file by file to received the files content in raw format
+3. All the files are store in azure cloud storage and map in the database ....
+
+... poniendo los pasos de los flujos
+
+### Setup dua template
+1.
+2. 
+3. 
+
+## Architecture diagrams in layers 
+- Follow the C4 estandard to create the diagrams and explanations
+- Check Week #6 #7 for the details 
+- In this case we're not going to make the components diagram, only context, container and code. 
+
+
+## Design Considerations
+
+* System configurations, parameters, and policies must be fully documented and maintained within the source code.
+* Resource allocations, including memory, server specifications, load balancing settings, and networking parameters.
+* Selection of specific algorithms and their respective parameters to be applied within core business logic.
+* Development and definition of agent prototypes.
+* Definition of interfaces, proxies, and integration points with external systems or architectural components.
+
+## Source Code
+
+* Use a specialized agent to generate the project's backend skeleton based on this technical description.
+* Ensure the agent focuses strictly on generating scripts, folder structures, or class definitions without implementing functional logic.
+* The directory structure of the backend code must align with the chosen repository architecture.
+* Provide direct links to key folders and primary classes within the relevant sections of this README.md file.
+
+
 # 3. Data Design
 
 
