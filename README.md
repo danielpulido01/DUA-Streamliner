@@ -4,7 +4,7 @@
 
 The preparation process of the Single Customs Declaration (DUA) in Costa Rica is manual, repetitive, and highly dependent on expert knowledge. To complete it correctly, multiple source documents must be interpreted - including commercial invoices, packing lists, certificates of origin, bills of lading, and insurance policies - which are typically provided in heterogeneous formats such as Excel, Word, PDF, and scanned images, often with varying structures.
 
-This documentary diversity requires case-by-case interpretation, increasing the risk of errors, value inconsistencies, missing information, and potential penalties or delays in import and export procedures. Additionally, the time spent on operational tasks limits the customs professionalâ€™s ability to focus on strategic validation and regulatory compliance.
+This documentary diversity requires case-by-case interpretation, increasing the risk of errors, value inconsistencies, missing information, and potential penalties or delays in import and export procedures. Additionally, the time spent on operational tasks limits the customs professional's ability to focus on strategic validation and regulatory compliance.
 
 The core problem lies in the absence of an intelligent system capable of automatically interpreting heterogeneous commercial documents, extracting relevant information, and reliably mapping it to the official DUA template defined by the Ministry of Finance.
 
@@ -161,10 +161,10 @@ Evaluate user ability to:
 | Task 5 - Logout | User ends the session |
 
 #### Participants
-- Lazaro GonzÃ¡lez (Student)
+- Lázaro González (Student)
 - Jimena Sanchez (Student)
 - Juan Diego Arce (Student)
-- JosuÃ© Venegas (Student)
+- Josué Venegas (Student)
 
 #### Key Metrics (Maze)
 
@@ -661,19 +661,20 @@ export function FileList({ files }: { files: FileItem[] }) {
 - Context API
 - Zod
 - Axios or Fetch wrapper
-- HTTP-only secure cookies preferred for session handling
+- JWT bearer tokens for protected API requests
 
 ### 1.4.2 Authentication
-Uses Microsoft Entra
+Uses username, password, and one-time token authentication.
 
-1. User submits email and password.
+1. User submits username, password, and one-time token.
 2. Frontend validates the form using Zod.
   ```TypeScript
   import { z } from "zod";
 
   export const loginRequestSchema = z.object({
-    email: z.string().email(),
+    username: z.string().min(1),
     password: z.string().min(1),
+    otp: z.string().min(1),
   });
   
   export type LoginRequest = z.infer<typeof loginRequestSchema>;
@@ -686,7 +687,7 @@ Uses Microsoft Entra
   import type { AuthSession } from "../state/session.types";
 
   export class AuthService {
-    async login(input: { email: string; password: string }): Promise<AuthSession | null> {
+    async login(input: { username: string; password: string; otp: string }): Promise<AuthSession | null> {
       const payload = parseWithSchema(loginRequestSchema, input, { schemaName: "login request" });
       const response = await httpClientFacade.fetch("/api/auth/login", {
         method: "POST",
@@ -702,13 +703,31 @@ Uses Microsoft Entra
   }
   ```
 4. Backend validates the credentials.
-5. Backend creates the session.
-6. Backend returns:
-   - Secure session cookie
+5. Backend validates the one-time token.
+6. Backend issues the JWT bearer token.
+7. Backend creates the session context.
+8. Backend returns:
+   - JWT bearer token
    - Authenticated user profile
    - Permission set or role set
-  
-  [useLogin.ts](/src/components/hooks/useLogin.ts)
+9. Frontend normalizes and stores the authenticated session (user, roles, permissions) through `SessionProvider` and `sessionManager`.
+  ```TypeScript
+  // Inside useLogin after successful authentication
+  const session = await authService.login(parsed.data);
+  setSession(session); // SessionProvider delegates to sessionManager.setSession
+
+  // SessionProvider maps session data for app-wide access
+  const value = {
+    session,
+    user: session?.user ?? null,
+    roles: session?.roles ?? [],
+    permissions: session?.permissions ?? [],
+    isAuthenticated: session?.isAuthenticated ?? false,
+  };
+  ```
+10. Frontend redirects to the Home screen.
+
+[useLogin.ts](/src/components/hooks/useLogin.ts)
   ```TypeScript
   import { useState } from "react";
   import { useSession } from "./useSession";
@@ -720,7 +739,7 @@ Uses Microsoft Entra
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    async function login(input: { email: string; password: string }) {
+    async function login(input: { username: string; password: string; otp: string }) {
       setError(null);
       setIsLoading(true);
 
@@ -743,22 +762,6 @@ Uses Microsoft Entra
     return { login, isLoading, error };
   }
   ```
-7. Frontend normalizes and stores the authenticated session (user, roles, permissions) through `SessionProvider` and `sessionManager`.
-  ```TypeScript
-  // Inside useLogin after successful authentication
-  const session = await authService.login(parsed.data);
-  setSession(session); // SessionProvider delegates to sessionManager.setSession
-
-  // SessionProvider maps session data for app-wide access
-  const value = {
-    session,
-    user: session?.user ?? null,
-    roles: session?.roles ?? [],
-    permissions: session?.permissions ?? [],
-    isAuthenticated: session?.isAuthenticated ?? false,
-  };
-  ```
-8. Frontend redirects to the Home screen.
 
 ### 1.4.3 Authorization
 
@@ -820,7 +823,7 @@ Role to permissions mapping is found in [rolePermissions.ts](/src/auth/policies/
 | Role     | Permissions                                                                                                                                                                                                                                         |
 | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | admin    | All permissions                                                                                                                                                                                                                                     |
-| operator | auth.login, auth.logout, session.read, user.profile.read, files.read, files.upload, activity.read, dua.template.upload, dua.template.validate, dua.generate, generation.read, generation.refresh, generation.errors.read, dua.preview, dua.download |
+| operator | auth.login, auth.logout, session.read, user.profile.read, files.read, files.upload, files.delete, activity.read, dua.template.upload, dua.template.validate, dua.generate, generation.read, generation.refresh, generation.errors.read, dua.preview, dua.download |
 | reviewer | auth.login, auth.logout, session.read, user.profile.read, files.read, activity.read, dua.preview, dua.confirm, dua.download, generation.read, generation.refresh, generation.errors.read                                                            |
 | viewer   | auth.login, auth.logout, session.read, user.profile.read, files.read, activity.read, generation.read                                                                                                                                                |
 
@@ -1798,116 +1801,185 @@ When adding a new operation, add it to the relevant facade interface first, then
 
 The `/src` folder contains the application scaffold organized by architectural layers and functional domains, following the 5-layer architecture specified in sections 1.1 to 1.6.
 
-```
+```text
 src
- â”œ AppProviders.tsx
- â”œ main.tsx
- â”‚
- â”œ auth/
- â”‚   â”œ auth-schemas.ts
- â”‚   â”œ AuthProvider.tsx
- â”‚   â”œ authService.ts
- â”‚   â”œ guards/
- â”‚   â”‚   â”œ AuthGuard.tsx
- â”‚   â”‚   â”œ GuestGuard.tsx
- â”‚   â”‚   â”” PolicyGuard.tsx
- â”‚   â”” policies/
- â”‚       â”œ accessPolicy.ts
- â”‚       â”œ permissions.ts
- â”‚       â”œ rolePermissions.ts
- â”‚       â”” roles.ts
- â”‚
- â”œ components/
- â”‚   â”œ atoms/
- â”‚   â”‚   â”œ ImageWithFallback.tsx
- â”‚   â”‚   â”œ language-switcher.tsx
- â”‚   â”‚   â”œ theme-switcher.tsx
- â”‚   â”‚   â”” ui/
- â”‚   â”‚       â”œ accordion.tsx
- â”‚   â”‚       â”œ alert.tsx
- â”‚   â”‚       â”œ button.tsx
- â”‚   â”‚       â”œ dialog.tsx
- â”‚   â”‚       â”” ... (20+ shadcn/ui components)
- â”‚   â”‚
- â”‚   â”œ molecules/
- â”‚   â”‚   â”œ app-error-boundary.tsx
- â”‚   â”‚   â”” info-banner.tsx
- â”‚   â”‚
- â”‚   â”œ organisms/
- â”‚   â”‚   â”œ homePageLayout.tsx
- â”‚   â”‚   â”” homePageLayout.css
- â”‚   â”‚
- â”‚   â”œ hooks/
- â”‚   â”‚   â”œ useLogin.ts
- â”‚   â”‚   â”œ useLogout.ts
- â”‚   â”‚   â”œ usePermissions.ts
- â”‚   â”‚   â”œ usePolicies.ts
- â”‚   â”‚   â”œ useSession.ts
- â”‚   â”‚   â”” useTheme.ts
- â”‚   â”‚
- â”‚   â”œ i18n/
- â”‚   â”‚   â”œ config.ts
- â”‚   â”‚   â”œ I18nProvider.tsx
- â”‚   â”‚   â”œ en.json
- â”‚   â”‚   â”” es.json
- â”‚   â”‚
- â”‚   â”” styles/
- â”‚       â”œ breakpoints.ts
- â”‚       â”œ globals.css
- â”‚       â”œ theme.ts
- â”‚       â”œ ThemeProvider.tsx
- â”‚       â”” tokens.ts
- â”‚
- â”œ models/
- â”‚   â”œ app-error.ts
- â”‚   â”œ common-schemas.ts
- â”‚   â”” loginRequest-schema.ts
- â”‚
- â”œ routes/
- â”‚   â”œ AppRouter.tsx
- â”‚   â”” routeConfig.ts
- â”‚
- â”œ services/
- â”‚   â”œ client.ts
- â”‚   â”” httpInterceptors.ts
- â”‚
- â”œ state/
- â”‚   â”œ session.types.ts
- â”‚   â”œ sessionManager.ts
- â”‚   â”œ SessionProvider.tsx
- â”‚   â”” sessionStore.ts
- â”‚
- â”” utils/
-     â”œ error-handler.ts
-     â”œ logger.ts
-     â”œ schemaValidator.ts
-     â”” sessionManager.ts
+├── AppProviders.tsx
+├── main.tsx
+├── auth/
+│   ├── auth-schemas.ts
+│   ├── AuthProvider.tsx
+│   ├── authService.ts
+│   ├── guards/
+│   │   ├── AuthGuard.tsx
+│   │   ├── GuestGuard.tsx
+│   │   └── PolicyGuard.tsx
+│   └── policies/
+│       ├── accessPolicy.ts
+│       ├── permissions.ts
+│       ├── rolePermissions.ts
+│       └── roles.ts
+├── components/
+│   ├── atoms/
+│   │   ├── ImageWithFallback.tsx
+│   │   ├── language-switcher.tsx
+│   │   ├── theme-switcher.tsx
+│   │   └── ui/
+│   │       ├── accordion.tsx
+│   │       ├── alert-dialog.tsx
+│   │       ├── alert.tsx
+│   │       ├── button.tsx
+│   │       ├── dialog.tsx
+│   │       ├── input-otp.tsx
+│   │       └── ... (additional shadcn/ui components)
+│   ├── hooks/
+│   │   ├── useApplicationServices.ts
+│   │   ├── useDuaGeneration.ts
+│   │   ├── useGenerationProgress.ts
+│   │   ├── useLogin.ts
+│   │   ├── useLogout.ts
+│   │   ├── usePermissions.ts
+│   │   ├── usePolicies.ts
+│   │   ├── useSession.ts
+│   │   └── useTheme.ts
+│   ├── i18n/
+│   │   ├── config.ts
+│   │   ├── I18nProvider.tsx
+│   │   ├── en.json
+│   │   └── es.json
+│   ├── molecules/
+│   │   ├── app-error-boundary.tsx
+│   │   └── info-banner.tsx
+│   ├── organisms/
+│   │   ├── homePageLayout.css
+│   │   └── homePageLayout.tsx
+│   ├── pages/
+│   │   └── GenerationProgressPage.tsx
+│   └── styles/
+│       ├── breakpoints.ts
+│       ├── globals.css
+│       ├── theme.ts
+│       ├── ThemeProvider.tsx
+│       └── tokens.ts
+├── models/
+│   ├── app-error.ts
+│   ├── common-schemas.ts
+│   └── loginRequest-schema.ts
+├── routes/
+│   ├── AppRouter.tsx
+│   └── routeConfig.ts
+├── services/
+│   ├── applicationFacade.ts
+│   ├── client.ts
+│   ├── httpInterceptors.ts
+│   ├── unauthorizedHandlingStrategy.ts
+│   ├── reporting/
+│   │   ├── DuaTemplateReportGenerator.ts
+│   │   ├── HtmlOutputFormatter.ts
+│   │   ├── OutputFormatter.ts
+│   │   ├── PdfOutputFormatter.ts
+│   │   ├── ReportGenerator.ts
+│   │   ├── WordOutputFormatter.ts
+│   │   └── index.ts
+│   └── semantic/
+│       ├── RealSemanticAnalyzer.ts
+│       ├── SemanticAnalyzer.ts
+│       ├── SemanticAnalyzerProxy.ts
+│       └── index.ts
+├── state/
+│   ├── generation.types.ts
+│   ├── generationManager.ts
+│   ├── generationProgressStore.ts
+│   ├── session.types.ts
+│   ├── sessionManager.ts
+│   ├── SessionProvider.tsx
+│   └── sessionStore.ts
+└── utils/
+    ├── error-handler.ts
+    ├── logger.ts
+    ├── schemaValidator.ts
+    └── sessionManager.ts
 ```
 
 # 2. Backend Design
 
 ## Technology Stack
-- REST API, HTTPS
-- Azure API Management + Azure App Service
-- API standard with Open API
-- For asyncronous operations and notifications use Azure Notification Hubs
-- No load balance required
-- API coding language .NET 10.0.102, ASP.NET Core
-- This is a monorepo solution, sharing the repository with the frontend, backend folder: duabusiness
-- Services
+- API style: REST API over HTTPS
+- API specification standard: OpenAPI
+- API gateway and hosting: Azure API Management + Azure App Service
+- Database: Azure SQL Database
+- File storage: Azure Blob Storage
+- Asynchronous operations and notifications: Azure Notification Hubs
+- Load balancing: no dedicated load balancer required for the expected traffic profile
+- Backend framework and language: .NET SDK 10.0.102, ASP.NET Core
+- Repository structure: monorepo shared with the frontend; backend folder: `duabusiness`
+- Testing: xUnit for unit and integration tests
+- API documentation tooling: Swagger / OpenAPI tooling for contract publication and validation
+- Code quality: `dotnet format` and built-in .NET analyzers
+- Services:
+  - Authentication service
+  - Document upload service
+  - DUA generation orchestration service
+  - Notification service
+  - Result download service
 
 ## Security
-- HTTPS, algoritmo de encriptado que se va usar en la db
-- BD Azure SQL Database https://learn.microsoft.com/es-es/azure/azure-sql/database/security-overview?view=azuresql#transparent-data-encryption-encryption-at-rest-with-service-managed-keys en ese link viene lo del cifrado
-- payload size maximo general o hacer excepciones en ciertos endpoints
-- rate limit cantidad de conexiones concurrentes max
-- cuanto tiempo tengo la data en prod para luego pasarla a archive
+- Transport security: HTTPS enforced at Azure API Management for all public endpoints
+- Authentication:
+  - Username, password, and OTP are validated server-side
+  - After successful credential and OTP validation, the backend issues JWT bearer tokens
+  - JWT signing algorithm: RS256
+  - JWT tokens are required for all protected endpoints
+- Encryption at rest:
+  - Azure SQL Database uses Transparent Data Encryption (TDE) with service-managed keys
+  - Reference: https://learn.microsoft.com/en-us/azure/azure-sql/database/security-overview?view=azuresql#transparent-data-encryption-encryption-at-rest-with-service-managed-keys
+- Request payload limits:
+  - General API payload limit: 10 MB
+  - File upload endpoints exception: up to 100 MB per request to support realistic DUA document sets with multiple PDF, Excel, Word, and scanned image files
+  - Requests above these limits must be rejected with a clear validation error
+- Rate limiting at Azure API Management:
+  - Maximum concurrent connections per authenticated client: 10
+  - Request rate limit per authenticated client: 60 requests per minute
+  - Stricter limits may be applied to authentication endpoints to reduce abuse risk
+- Data retention and archiving:
+  - Production operational data and generated files remain in the active production environment for 90 days
+  - After 90 days, records and generated artifacts are moved to an archive tier for audit and traceability purposes
+  - Archived data is retained according to institutional or customs compliance requirements
 
 ## Observability
-- esto lo pueden trabajar pues debe ir en sincronía con el FE
-- Lista de eventos que se van a registrar
-- Plataforma para registrar esos eventos
-- Herramienta para generar los dashboards de analisis
+- Telemetry platform: Azure Application Insights, aligned with the frontend for unified end-to-end telemetry
+- Dashboard and analysis tool: Azure Monitor
+- Logged backend events:
+  - AuthLoginRequested
+  - AuthLoginSucceeded
+  - AuthLoginFailed
+  - OtpValidationSucceeded
+  - OtpValidationFailed
+  - UserLoggedOut
+  - FileUploadStarted
+  - FileUploadCompleted
+  - FileUploadRejected
+  - SupportedFilesValidated
+  - DuaTemplateUploadStarted
+  - DuaTemplateValidated
+  - DuaGenerationRequested
+  - DuaGenerationQueued
+  - DuaGenerationStarted
+  - DocumentParsingStarted
+  - DocumentParsingCompleted
+  - DataExtractionCompleted
+  - DataExtractionFailed
+  - FieldMappingCompleted
+  - FieldMappingFailed
+  - DuaDocumentGenerated
+  - DuaGenerationCompleted
+  - DuaGenerationFailed
+  - NotificationDispatched
+  - ProgressStatusTransitionLogged
+  - GeneratedDuaPreviewRequested
+  - GeneratedDuaDownloaded
+  - ApiRequestFailed
+  - UnhandledExceptionCaptured
+- Progress polling guideline: do not log every frontend polling request; log only meaningful status transitions and exceptional progress-check failures
 
 ## Infraestructure (devops)
 - Que herramienta controla las acctionces automatizadas desde el repositorio de codigo para CI CD,
