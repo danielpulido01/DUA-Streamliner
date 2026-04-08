@@ -1,4 +1,4 @@
-﻿# DUA-Streamliner
+# DUA-Streamliner
 
 ## Problem Statement
 
@@ -279,14 +279,14 @@ The frontend follows an atomic design for component architecture.
 Current component implementation uses 4 atomic UI layers plus shared support modules:
 ```
 src/
- â”œ components/
- â”‚   â”œ atoms/
- â”‚   â”œ molecules/
- â”‚   â”œ organisms/
- â”‚   â”œ pages/
- â”‚   â”œ hooks/
- â”‚   â”œ i18n/
- â”‚   â”” styles/
+ ├ components/
+ │   ├ atoms/
+ │   ├ molecules/
+ │   ├ organisms/
+ │   ├ pages/
+ │   ├ hooks/
+ │   ├ i18n/
+ │   └ styles/
 ```
 
 ### 1.3.3 Component Categories
@@ -338,8 +338,8 @@ info-banner.tsx
 Example:
 ```
 InfoBanner
- â”œ Alert
- â”” Button
+ ├ Alert
+ └ Button
 ```
 
 #### [Organisms](/src/components/organisms)
@@ -360,9 +360,9 @@ PageContainer
 Example:
 ```
 DashboardLayout
- â”œ Sidebar
- â”œ Topbar
- â”” PageContent
+ ├ Sidebar
+ ├ Topbar
+ └ PageContent
 ```
 
 #### [Pages](/src/components/pages)
@@ -541,9 +541,9 @@ grid-template-columns:
 #### Layout example
 ```
 Home Page
- â”œ Summary cards
- â”œ Uploaded files table
- â”” Activity log
+ ├ Summary cards
+ ├ Uploaded files table
+ └ Activity log
 ```
 
 Responsive behavior:
