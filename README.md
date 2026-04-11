@@ -1,4 +1,4 @@
-# DUA-Streamliner
+﻿# DUA-Streamliner
 
 ## Problem Statement
 
@@ -1988,16 +1988,41 @@ azure devops, github actions,
 - Ej. dev kubernetes, stage y prod: cloudformation, terraform
 
 ## Availability
-- Cuánto puede estar mi sistema offline en horas anuales? 
-- 99.99 uptime
-- Cuando ya tenga todo el technology stack, le pregunto a la AI cuales son single point of failure
-- Por cada elemento que se listo, debo averiguar que recovery o uptime ofrecen
-- Cualquier cosa que no logre dar la cantidad de 9s por defecto, hay que espeficicar coo se va a lograr el recovery
+- 99.99% uptime = 0.01% downtime per year = 52.56 minutes/year (≈ 0.876 hours/year)
 
+With the most recent official SLA (April 8, 2026) for your stack:
 
-## Scalability 
-- Qué elementos de la arquitectura crecen cuando crece los cantidad de request por minuto
+|Component	| SLA | Maximum theoretical downtime/year|
+|-----------|-----|--------------------------|
+|Azure API Management |	99.99% (Premium multi-region)	| 4.38 h / 0.876 h|
+|Azure App Service	| 99.99% (with 2+ AZ) | 4.38 h / 0.876 h|
+|Azure SQL Database	| 99.99% (no zone-redundant) / 99.995% (zone-redundant)	| 0.876 h / 0.438 h|
+|Azure Blob Storage	| 99.9% write hot; 99.99% read RA-GRS/RA-GZRS (depends on tier/redundancy) | 8.76 h / 0.876 h|
+|Azure Notification Hubs | 99.9% | 8.76 h|
 
+### Single points of failure (SPOF)
+- APIM in a single region or tier without multi-region.
+- App Service without Availability Zones.
+- SQL without zone redundancy + regional failover.
+- Blob in the synchronous write path (99.9% typical for write hot).
+- Notification Hubs if treated as a critical path of the transaction.
+
+### Recovery/mitigation for what doesn't provide 99.99% "by default"
+- APIM: use Premium with multi-region deployment and failover.
+- App Service: deploy across 2+ Availability Zones (ideally with a regional DR strategy).
+- SQL: zone-redundant + auto-failover group regional.
+- Blob: RA-GZRS/RA-GRS, retries with backoff, and decouple writing with asynchronous processing.
+- Notification Hubs: avoid blocking the main flow; use outbox + retries + DLQ + alternate channel (email/SMS) for incidents.
+
+## Scalability
+
+### These are the elements that do scale with RPM:
+- API Management: increase gateway units/capacity.
+- App Service: increase number of instances (scale-out) and/or plan (scale-up).
+- Azure SQL Database: increase vCores/IOPS/connections; may require read replicas or partitioning.
+- Blob Storage: increase transactions/second, bandwidth, and storage accounts/partitions.
+- Notification Hubs: increase pushes/minute, active registrations, and need to scale tier/units/namespaces.
+- Elementos que no crecen por RPM en runtime: xUnit, dotnet format, analyzers, OpenAPI tooling (son de build/gobierno).
 
 ## Backend key workflows 
 - esto lo pueden ir trabajando 
@@ -2018,7 +2043,6 @@ azure devops, github actions,
 - Follow the C4 estandard to create the diagrams and explanations
 - Check Week #6 #7 for the details 
 - In this case we're not going to make the components diagram, only context, container and code. 
-
 
 ## Design Considerations
 
