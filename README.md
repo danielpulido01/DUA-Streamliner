@@ -1946,6 +1946,7 @@ src
   - Archived data is retained according to institutional or customs compliance requirements
 
 ## Observability
+Azure Application Insights SDK
 - Telemetry platform: Azure Application Insights, aligned with the frontend for unified end-to-end telemetry
 - Dashboard and analysis tool: Azure Monitor
 - Logged backend events:
@@ -1981,11 +1982,43 @@ src
   - UnhandledExceptionCaptured
 - Progress polling guideline: do not log every frontend polling request; log only meaningful status transitions and exceptional progress-check failures
 
-## Infraestructure (devops)
-- Que herramienta controla las acctionces automatizadas desde el repositorio de codigo para CI CD,
-azure devops, github actions,
-- Con que herramienta hago el deployment a dev, stage y prod
-- Ej. dev kubernetes, stage y prod: cloudformation, terraform
+## Infrastructure (DevOps)
+
+### CI/CD orchestration tool
+- Standard tool: **Azure DevOps Pipelines** (single CI/CD control plane from this monorepo).
+- Rationale: repository-native workflows, PR checks, environments, approvals, and strong Azure integration.
+
+### Infrastructure as Code (IaC)
+- Standard tool: **Terraform** for provisioning and updates across environments.
+- Managed resources via Terraform:
+- Azure API Management
+- Azure App Service (API hosting)
+- Azure SQL Database
+- Azure Blob Storage
+- Azure Notification Hubs
+- Observability resources (Application Insights / Azure Monitor where applicable)
+
+### Environments and deployment model
+- Environments: `dev`, `stage`, `prod` (isolated by resource group and/or subscription).
+- Deployment pattern:
+- `dev`: automatic deployment on merge to `develop`.
+- `stage`: automatic deployment from `main` after CI success.
+- `prod`: manual approval + protected environment gate.
+- Application deployment target: **Azure App Service** (no Kubernetes required for current scope).
+- Production release strategy: deployment slots (`staging` -> `production`) with slot swap and rollback.
+
+### Pipeline structure (recommended)
+- `ci-frontend`: install, lint, test, build frontend.
+- `ci-backend`: restore, build, test backend (.NET), run static analysis/format checks.
+- `security-scan`: dependency/license checks and secret scanning.
+- `infra-plan`: `terraform fmt` + `terraform validate` + `terraform plan` per environment.
+- `deploy-dev` / `deploy-stage` / `deploy-prod`: apply infra changes (as approved) and deploy application artifacts.
+
+### Governance and quality gates
+- Required PR checks before merge: frontend CI, backend CI, security scan.
+- Protected branches: `main` and release branches.
+- Environment approvals required for `prod`.
+- Artifact/version traceability required per deployment (commit SHA, build ID, release timestamp).
 
 ## Availability
 - 99.99% uptime = 0.01% downtime per year = 52.56 minutes/year (≈ 0.876 hours/year)
@@ -2022,22 +2055,62 @@ With the most recent official SLA (April 8, 2026) for your stack:
 - Azure SQL Database: increase vCores/IOPS/connections; may require read replicas or partitioning.
 - Blob Storage: increase transactions/second, bandwidth, and storage accounts/partitions.
 - Notification Hubs: increase pushes/minute, active registrations, and need to scale tier/units/namespaces.
-- Elementos que no crecen por RPM en runtime: xUnit, dotnet format, analyzers, OpenAPI tooling (son de build/gobierno).
 
 ## Backend key workflows 
-- esto lo pueden ir trabajando 
-
 ### Upload files to generate dua
-1. The backend receive the list of files to be uploaded 
-2. Open a streaming transfer file by file to received the files content in raw format
-3. All the files are store in azure cloud storage and map in the database ....
-
-... poniendo los pasos de los flujos
+1. Client sends metadata for the selected files (name, size, mime type, checksum) and the target generation session.
+2. Backend validates authentication/authorization (`files.upload`) and enforces request-size/rate limits in APIM.
+3. Backend validates supported file types and rejects unsupported/oversized files with per-file errors.
+4. Backend opens streaming upload (multipart/chunked) and processes files sequentially or in bounded parallelism.
+5. For each file, backend writes the binary stream directly to Azure Blob Storage (no full file buffering in memory).
+6. Backend computes/stores checksum, detects duplicates, and records upload status (`started`, `completed`, `rejected`) in Azure SQL.
+7. Backend persists file metadata and blob reference (container, blob path, ETag/version, owner, upload timestamp).
+8. Backend returns a summary response with accepted/rejected files and emits telemetry events (`FileUploadStarted`, `FileUploadCompleted`, `FileUploadRejected`).
 
 ### Setup dua template
-1.
-2. 
-3. 
+1. Client uploads or selects the DUA template for the active generation session (`dua.template.upload`).
+2. Backend validates template format/version (expected `.docx` structure and mandatory placeholders/fields).
+3. Backend stores template artifact in Azure Blob Storage and creates/updates template metadata in Azure SQL.
+4. Backend runs schema/field integrity checks and returns validation findings (blocking errors and warnings).
+5. Backend marks template status as `valid` or `invalid` and emits telemetry (`DuaTemplateUploadStarted`, `DuaTemplateValidated`).
+
+### Start dua generation
+1. Client requests generation with selected uploaded files + validated template (`dua.generate`).
+2. Backend verifies prerequisites: at least one valid source file, valid template, active session, and user permissions.
+3. Backend creates a generation record in Azure SQL with status `queued` and a correlation ID.
+4. Backend enqueues an asynchronous generation job (or background task trigger) and returns `202 Accepted` with `generationId`.
+5. Backend emits telemetry (`DuaGenerationRequested`, `DuaGenerationQueued`).
+
+### Execute generation pipeline (async worker)
+1. Worker dequeues `generationId`, acquires lock/idempotency token, and transitions state to `running`.
+2. Worker downloads required files/template from Blob and normalizes input formats (PDF, DOCX, XLSX, images/OCR outputs).
+3. Worker parses documents and extracts semantic/business data.
+4. Worker maps extracted values into canonical DUA domain fields and runs business validation rules.
+5. Worker applies mapped values to the DUA template, generates output document(s), and stores artifacts in Blob.
+6. Worker persists structured results, warnings/errors, and final state in Azure SQL.
+7. Worker updates status transitions (`running` -> `completed` or `failed`) and emits telemetry (`DuaGenerationStarted`, `DocumentParsingCompleted`, `DuaGenerationCompleted`/`DuaGenerationFailed`).
+8. Worker triggers user notification through Notification Hubs (non-blocking with retry policy/outbox).
+
+### Track generation progress and errors
+1. Frontend polls progress endpoint (`generation.read` / `generation.refresh`) with `generationId`.
+2. Backend returns current state, progress percentage, current step, and last transition timestamp.
+3. Backend provides structured warning/error list (`generation.errors.read`) when available.
+4. Backend only logs meaningful state transitions and exceptional polling failures (avoids telemetry noise).
+
+### Preview, confirm, and download generated dua
+1. Once status is `completed`, client requests preview (`dua.preview`).
+2. Backend authorizes access, resolves generated artifact, and returns secure preview payload/URL.
+3. Reviewer/operator confirms document (`dua.confirm`) or rejects for regeneration with comments.
+4. On confirmation, backend marks version as approved and immutable for audit.
+5. Client downloads final file (`dua.download`) through authorized endpoint or short-lived signed URL.
+6. Backend logs audit trail (`GeneratedDuaPreviewRequested`, `GeneratedDuaDownloaded`) with user, timestamp, and artifact version.
+
+### Data retention and archival
+1. Scheduled backend job identifies records/artifacts older than 90 days in active storage.
+2. Backend moves eligible metadata/files to configured archive tier while preserving referential integrity.
+3. Backend updates lifecycle status in Azure SQL (`archived`) and stores archive location metadata.
+4. Backend keeps audit and retrieval capabilities according to customs/compliance retention policy.
+5. Backend emits operational telemetry for archival success/failure and retry attempts.
 
 ## Architecture diagrams in layers 
 - Follow the C4 estandard to create the diagrams and explanations
@@ -2046,18 +2119,88 @@ With the most recent official SLA (April 8, 2026) for your stack:
 
 ## Design Considerations
 
-* System configurations, parameters, and policies must be fully documented and maintained within the source code.
-* Resource allocations, including memory, server specifications, load balancing settings, and networking parameters.
-* Selection of specific algorithms and their respective parameters to be applied within core business logic.
-* Development and definition of agent prototypes.
-* Definition of interfaces, proxies, and integration points with external systems or architectural components.
+### 1) Configuration, parameters, and policy as code
+- All runtime configuration must be versioned in source control (environment-specific values injected via secure configuration providers, not hardcoded secrets).
+- Maintain a single configuration catalog with default values, allowed ranges, owner, and last review date.
+- Security and operational policies must be implemented as enforceable controls:
+- APIM rate limits/quotas, payload limits, and CORS policies.
+- Authentication/authorization policy mappings (`roles -> permissions -> endpoints`).
+- Data retention and archival policy (90-day hot data, archive tier lifecycle).
+- Any policy change must include: code/config change, migration notes, and rollback plan.
+
+### 2) Resource allocation and capacity planning
+- Define baseline and peak workload assumptions: concurrent users, requests/minute, average/maximum upload sizes, and generation job duration.
+- Configure App Service scale rules (scale-out on CPU, memory, and queue depth) and set minimum warm instances for business hours.
+- Configure SQL connection pooling and query performance budgets (P95/P99 targets, timeout budgets, retry limits).
+- Keep file transfer and document generation decoupled through asynchronous processing to avoid blocking API threads.
+- Define network and resiliency settings explicitly: request timeout, retry with exponential backoff, circuit-breaker thresholds, and idempotency keys.
+
+### 3) Algorithm selection and business-rule parameterization
+- The generation pipeline must be deterministic and traceable per stage: parse -> extract -> map -> validate -> render.
+- Each algorithmic component must define its operational parameters (confidence thresholds, validation strictness, fallback behavior).
+- Business rules (field mappings, customs validation logic, mandatory/optional rules) must be externalized in versioned rule sets where possible.
+- Every release must include regression validation with representative document sets (PDF, DOCX, XLSX, scanned images).
+- When extraction confidence is below threshold, route to a manual review path instead of silently auto-filling uncertain values.
+
+### 4) Agent prototype definition (AI-assisted processing)
+- Define bounded responsibilities per agent prototype (example: document classification, entity extraction, field mapping suggestions).
+- Define non-functional constraints for each agent: latency budget, max token/compute cost, and acceptable error rate.
+- Enforce safe execution boundaries: no direct external side effects without orchestration approval; all outputs pass validation rules.
+- Establish evaluation metrics before rollout (precision/recall by document type, mapping accuracy, false-positive critical fields).
+- Roll out with staged strategy: offline evaluation -> shadow mode -> limited production cohort -> full rollout.
+
+### 5) Interfaces, proxies, and external integrations
+- Use contract-first interfaces (OpenAPI) for all public and internal APIs; version contracts semantically.
+- Use integration proxies/adapters for external dependencies (storage, notifications, OCR/AI providers) to isolate provider-specific logic.
+- Define integration SLAs and failure modes per dependency: timeout, retry policy, dead-letter handling, and compensating actions.
+- Standardize observability across boundaries: correlation ID propagation, structured logs, and domain events for state transitions.
+- Define backward-compatibility and deprecation policy for interfaces to avoid breaking active clients and long-running jobs.
 
 ## Source Code
 
-* Use a specialized agent to generate the project's backend skeleton based on this technical description.
-* Ensure the agent focuses strictly on generating scripts, folder structures, or class definitions without implementing functional logic.
-* The directory structure of the backend code must align with the chosen repository architecture.
-* Provide direct links to key folders and primary classes within the relevant sections of this README.md file.
+### Backend scaffold generation scope
+- Use a specialized scaffolding agent to generate the backend skeleton in `duabusiness/` from this technical specification.
+- Target stack for scaffolded code: ASP.NET Core (.NET SDK 10.0.102) with adapters for Azure SQL, Azure Blob Storage, and Azure Notification Hubs.
+- The generated output must include only structure artifacts: project/solution files, folders, class/interface definitions, DTOs, request/response contracts, configuration classes, DI wiring, and CI/CD scripts/templates.
+- The generated output must not include functional business logic: no extraction/mapping algorithms, no production SQL queries, no external API side effects, and no hardcoded credentials.
+- Methods may be created as stubs (`throw new NotImplementedException()` or equivalent) until implementation phase.
+
+### Monorepo target structure (backend)
+- Backend root: [`duabusiness/`](/duabusiness)
+- Source root: [`duabusiness/src/`](/duabusiness/src)
+- Tests root: [`duabusiness/tests/`](/duabusiness/tests)
+- Deployment/IaC root: [`duabusiness/deploy/`](/duabusiness/deploy)
+
+### Required backend projects
+- API host: [`duabusiness/src/DUA.API/`](/duabusiness/src/DUA.API)
+- Application layer: [`duabusiness/src/DUA.Application/`](/duabusiness/src/DUA.Application)
+- Domain layer: [`duabusiness/src/DUA.Domain/`](/duabusiness/src/DUA.Domain)
+- Infrastructure layer: [`duabusiness/src/DUA.Infrastructure/`](/duabusiness/src/DUA.Infrastructure)
+- Contracts (OpenAPI/DTOs): [`duabusiness/src/DUA.Contracts/`](/duabusiness/src/DUA.Contracts)
+
+### Primary classes to scaffold first
+- API bootstrap: [`duabusiness/src/DUA.API/Program.cs`](/duabusiness/src/DUA.API/Program.cs)
+- Auth endpoints: [`duabusiness/src/DUA.API/Controllers/AuthController.cs`](/duabusiness/src/DUA.API/Controllers/AuthController.cs)
+- Files endpoints: [`duabusiness/src/DUA.API/Controllers/FilesController.cs`](/duabusiness/src/DUA.API/Controllers/FilesController.cs)
+- Template endpoints: [`duabusiness/src/DUA.API/Controllers/TemplatesController.cs`](/duabusiness/src/DUA.API/Controllers/TemplatesController.cs)
+- Generation endpoints: [`duabusiness/src/DUA.API/Controllers/GenerationController.cs`](/duabusiness/src/DUA.API/Controllers/GenerationController.cs)
+- Download endpoints: [`duabusiness/src/DUA.API/Controllers/DownloadsController.cs`](/duabusiness/src/DUA.API/Controllers/DownloadsController.cs)
+- Upload orchestration contract: [`duabusiness/src/DUA.Application/Abstractions/IFileUploadService.cs`](/duabusiness/src/DUA.Application/Abstractions/IFileUploadService.cs)
+- Template validation contract: [`duabusiness/src/DUA.Application/Abstractions/ITemplateValidationService.cs`](/duabusiness/src/DUA.Application/Abstractions/ITemplateValidationService.cs)
+- Generation orchestration contract: [`duabusiness/src/DUA.Application/Abstractions/IDuaGenerationService.cs`](/duabusiness/src/DUA.Application/Abstractions/IDuaGenerationService.cs)
+- Blob storage adapter: [`duabusiness/src/DUA.Infrastructure/Storage/AzureBlobStorageService.cs`](/duabusiness/src/DUA.Infrastructure/Storage/AzureBlobStorageService.cs)
+- SQL persistence context: [`duabusiness/src/DUA.Infrastructure/Persistence/DuaDbContext.cs`](/duabusiness/src/DUA.Infrastructure/Persistence/DuaDbContext.cs)
+- Notification adapter: [`duabusiness/src/DUA.Infrastructure/Notifications/AzureNotificationHubService.cs`](/duabusiness/src/DUA.Infrastructure/Notifications/AzureNotificationHubService.cs)
+
+### CI/CD and IaC source folders
+- GitHub Actions workflows: [`.github/workflows/`](/.github/workflows)
+- Terraform root (environment modules): [`duabusiness/deploy/terraform/`](/duabusiness/deploy/terraform)
+
+### Scaffold acceptance criteria
+- Solution compiles successfully with empty/stub implementations.
+- OpenAPI document is generated for all planned endpoints.
+- Dependency injection registrations resolve at startup.
+- Project boundaries respect layered architecture (`API -> Application -> Domain`, `Infrastructure` as adapters).
 
 
 # 3. Data Design
