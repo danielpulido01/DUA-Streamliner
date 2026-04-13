@@ -2166,9 +2166,15 @@ With the most recent official SLA (April 8, 2026) for your stack:
 5. Backend emits operational telemetry for archival success/failure and retry attempts.
 
 ## Architecture diagrams in layers 
-- Follow the C4 estandard to create the diagrams and explanations
-- Check Week #6 #7 for the details 
-- In this case we're not going to make the components diagram, only context, container and code. 
+
+### Level 1 - Context
+![Context Diagram](media/C4_context.png)
+
+### Level 2 - Container
+![Container Diagram](media/C4_container.png)
+
+### Level 4 - Code
+![Code Diagram](media/C4_code.png)
 
 ## Design Considerations
 
