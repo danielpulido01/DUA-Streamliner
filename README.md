@@ -1946,7 +1946,6 @@ src
   - Archived data is retained according to institutional or customs compliance requirements
 
 ## Observability
-Azure Application Insights SDK
 - Telemetry platform: Azure Application Insights, aligned with the frontend for unified end-to-end telemetry
 - Dashboard and analysis tool: Azure Monitor
 - Logged backend events:
@@ -1981,6 +1980,20 @@ Azure Application Insights SDK
   - ApiRequestFailed
   - UnhandledExceptionCaptured
 - Progress polling guideline: do not log every frontend polling request; log only meaningful status transitions and exceptional progress-check failures
+
+### Operational metrics (required)
+- Latency metrics: at minimum P95/P99 per API endpoint and critical business flow.
+- Error metrics: request error rate (4xx/5xx), dependency failure rate, and timeout rate.
+- Saturation metrics: CPU/memory utilization, queue depth/age, and worker concurrency saturation.
+- Monitoring stack options:
+  - Self-managed: Prometheus + Grafana.
+  - Managed: Azure Monitor.
+
+### Application observability patterns (required)
+- Health checks: implement `liveness` and `readiness` endpoints for API and workers.
+- Correlation IDs: propagate a single correlation ID across all services, async messages, logs, traces, and domain events.
+- SLIs defined from design: availability and latency SLIs must be defined at architecture stage for each critical user flow.
+
 
 ## Infrastructure (DevOps)
 
@@ -2021,7 +2034,17 @@ Azure Application Insights SDK
 - Artifact/version traceability required per deployment (commit SHA, build ID, release timestamp).
 
 ## Availability
-- 99.99% uptime = 0.01% downtime per year = 52.56 minutes/year (≈ 0.876 hours/year)
+99.99% uptime = 0.01% downtime per year = 52.56 minutes/year (≈ 0.876 hours/year)
+
+### Resilience patterns (required)
+- Circuit breaker per downstream dependency (SQL, Blob, Notification Hubs, external APIs) to fail fast when an integration is unhealthy and protect API latency.
+- Timeouts + retries with exponential backoff (and jitter) for transient failures; retries only for idempotent operations or operations protected with idempotency keys.
+- Bulkhead isolation so one slow dependency cannot collapse the full API: separate connection pools, bounded concurrency, and isolated worker/queue paths by integration.
+
+### Controlled degradation (required)
+- Feature flags to disable non-critical capabilities quickly (notifications, advanced enrichments, non-essential validations) while preserving core transaction flows.
+- Partial responses when optional downstream data is unavailable; return available data + explicit `partial=true` and error details per missing section.
+- Absorption queues (outbox + async processing) for burst traffic and slow dependencies to decouple request handling from eventual side effects.
 
 With the most recent official SLA (April 8, 2026) for your stack:
 
@@ -2049,12 +2072,42 @@ With the most recent official SLA (April 8, 2026) for your stack:
 
 ## Scalability
 
-### These are the elements that do scale with RPM:
-- API Management: increase gateway units/capacity.
-- App Service: increase number of instances (scale-out) and/or plan (scale-up).
-- Azure SQL Database: increase vCores/IOPS/connections; may require read replicas or partitioning.
-- Blob Storage: increase transactions/second, bandwidth, and storage accounts/partitions.
-- Notification Hubs: increase pushes/minute, active registrations, and need to scale tier/units/namespaces.
+### 1) Scaling model and expected bottlenecks
+- Expected bottlenecks by workload:
+  - Upload path: network throughput, Blob write throughput, and request concurrency limits.
+  - Generation path: CPU/memory for parsing/extraction and queue backlog under peak load.
+  - Persistence path: Azure SQL write contention, query latency, and connection pool saturation.
+  - Notification path: burst throughput limits in Notification Hubs.
+
+### 2) Stateless application tier and session strategy
+- API layer in Azure App Service must remain stateless to allow safe horizontal scaling.
+- Primary auth model: JWT bearer tokens, minimizing server-side session coupling.
+- If server-side session/state is required (revocation lists, workflow locks, short-lived coordination), use external state store: Azure Cache for Redis.
+- JWT-only: simpler scale-out, but harder immediate revocation and token invalidation semantics.
+
+### 3) Heavy processing via queues and workers
+- Long-running/CPU-heavy operations (document normalization, parsing, extraction, rendering) must execute asynchronously outside request threads.
+- Azure Service Bus + Azure Functions (or dedicated worker service on App Service).
+- Queue design requirements: idempotency key per job, retry policy with backoff, dead-letter queue, poison message handling, and replay procedure.
+
+### 4) Data scaling: partitioning and sharding evolution path
+- Start with a single Azure SQL logical model optimized with indexing and query tuning.
+- Introduce partitioning strategy before saturation (for example by organization/tenant and time window).
+- Move cold/history-heavy data to archive models to protect hot-path performance.
+- Keep large binaries in Blob Storage and only metadata/references in SQL to reduce database growth pressure.
+
+### 5) Caching and edge distribution
+- Use Azure Cache for Redis for high-read metadata, short-lived coordination state, and optional token/session support.
+- Use response caching only for safe/idempotent GET operations with explicit TTL and invalidation rules.
+- Use CDN/edge (Azure Front Door/CDN) for static assets and, where safe, edge caching of public or explicitly cacheable GET responses.
+- Cache governance must define: cache keys, TTLs, invalidation triggers, and stale-data tolerance per endpoint.
+
+### 6) Auto-scaling and cost guardrails
+- Auto-scaling policies must be driven by combined metrics, not only CPU:
+- CPU/memory, RPS, P95/P99 latency, queue length/age, and SQL pressure indicators.
+- Define per-environment min/max instance limits to prevent uncontrolled spend.
+- Define protective limits and backpressure behavior (429/rate limiting/queue admission control) when max capacity is reached.
+- Add budget and anomaly alerts tied to scaling events, queue growth, and database throughput thresholds.
 
 ## Backend key workflows 
 ### Upload files to generate dua
@@ -2165,32 +2218,39 @@ With the most recent official SLA (April 8, 2026) for your stack:
 - The generated output must not include functional business logic: no extraction/mapping algorithms, no production SQL queries, no external API side effects, and no hardcoded credentials.
 - Methods may be created as stubs (`throw new NotImplementedException()` or equivalent) until implementation phase.
 
-### Monorepo target structure (backend)
+### Monorepo target structure (backend, domain-first)
 - Backend root: [`duabusiness/`](/duabusiness)
 - Source root: [`duabusiness/src/`](/duabusiness/src)
+- Domain modules root: [`duabusiness/src/DUA.Backend/domains/`](/duabusiness/src/DUA.Backend/domains)
+- Cross-domain ACL root: [`duabusiness/src/DUA.Backend/acls/`](/duabusiness/src/DUA.Backend/acls)
+- Shared kernel root: [`duabusiness/src/DUA.Backend/shared/`](/duabusiness/src/DUA.Backend/shared)
 - Tests root: [`duabusiness/tests/`](/duabusiness/tests)
 - Deployment/IaC root: [`duabusiness/deploy/`](/duabusiness/deploy)
 
-### Required backend projects
-- API host: [`duabusiness/src/DUA.API/`](/duabusiness/src/DUA.API)
-- Application layer: [`duabusiness/src/DUA.Application/`](/duabusiness/src/DUA.Application)
-- Domain layer: [`duabusiness/src/DUA.Domain/`](/duabusiness/src/DUA.Domain)
-- Infrastructure layer: [`duabusiness/src/DUA.Infrastructure/`](/duabusiness/src/DUA.Infrastructure)
-- Contracts (OpenAPI/DTOs): [`duabusiness/src/DUA.Contracts/`](/duabusiness/src/DUA.Contracts)
+### Required structure inside each domain module
+- For every domain folder under `domains/<domain-name>/`, scaffold exactly these subfolders:
+- `controllers/`
+- `models/`
+- `repositories/`
+- `services/`
+- Example domains to scaffold first:
+- [`duabusiness/src/DUA.Backend/domains/identity-access/`](/duabusiness/src/DUA.Backend/domains/identity-access)
+- [`duabusiness/src/DUA.Backend/domains/document-intake/`](/duabusiness/src/DUA.Backend/domains/document-intake)
+- [`duabusiness/src/DUA.Backend/domains/template-management/`](/duabusiness/src/DUA.Backend/domains/template-management)
+- [`duabusiness/src/DUA.Backend/domains/dua-generation/`](/duabusiness/src/DUA.Backend/domains/dua-generation)
+- [`duabusiness/src/DUA.Backend/domains/review-confirmation/`](/duabusiness/src/DUA.Backend/domains/review-confirmation)
+- [`duabusiness/src/DUA.Backend/domains/distribution/`](/duabusiness/src/DUA.Backend/domains/distribution)
+- [`duabusiness/src/DUA.Backend/domains/retention-archival/`](/duabusiness/src/DUA.Backend/domains/retention-archival)
 
-### Primary classes to scaffold first
-- API bootstrap: [`duabusiness/src/DUA.API/Program.cs`](/duabusiness/src/DUA.API/Program.cs)
-- Auth endpoints: [`duabusiness/src/DUA.API/Controllers/AuthController.cs`](/duabusiness/src/DUA.API/Controllers/AuthController.cs)
-- Files endpoints: [`duabusiness/src/DUA.API/Controllers/FilesController.cs`](/duabusiness/src/DUA.API/Controllers/FilesController.cs)
-- Template endpoints: [`duabusiness/src/DUA.API/Controllers/TemplatesController.cs`](/duabusiness/src/DUA.API/Controllers/TemplatesController.cs)
-- Generation endpoints: [`duabusiness/src/DUA.API/Controllers/GenerationController.cs`](/duabusiness/src/DUA.API/Controllers/GenerationController.cs)
-- Download endpoints: [`duabusiness/src/DUA.API/Controllers/DownloadsController.cs`](/duabusiness/src/DUA.API/Controllers/DownloadsController.cs)
-- Upload orchestration contract: [`duabusiness/src/DUA.Application/Abstractions/IFileUploadService.cs`](/duabusiness/src/DUA.Application/Abstractions/IFileUploadService.cs)
-- Template validation contract: [`duabusiness/src/DUA.Application/Abstractions/ITemplateValidationService.cs`](/duabusiness/src/DUA.Application/Abstractions/ITemplateValidationService.cs)
-- Generation orchestration contract: [`duabusiness/src/DUA.Application/Abstractions/IDuaGenerationService.cs`](/duabusiness/src/DUA.Application/Abstractions/IDuaGenerationService.cs)
-- Blob storage adapter: [`duabusiness/src/DUA.Infrastructure/Storage/AzureBlobStorageService.cs`](/duabusiness/src/DUA.Infrastructure/Storage/AzureBlobStorageService.cs)
-- SQL persistence context: [`duabusiness/src/DUA.Infrastructure/Persistence/DuaDbContext.cs`](/duabusiness/src/DUA.Infrastructure/Persistence/DuaDbContext.cs)
-- Notification adapter: [`duabusiness/src/DUA.Infrastructure/Notifications/AzureNotificationHubService.cs`](/duabusiness/src/DUA.Infrastructure/Notifications/AzureNotificationHubService.cs)
+### ACL policy for cross-domain communication
+- All cross-domain calls must go through the ACL layer in [`duabusiness/src/DUA.Backend/acls/`](/duabusiness/src/DUA.Backend/acls).
+- No domain is allowed to reference another domain's `repositories/` or `services/` directly.
+- ACLs must expose explicit translator/adaptor contracts between domains (anti-corruption boundary).
+- Suggested ACL modules:
+- [`duabusiness/src/DUA.Backend/acls/document-intake-to-dua-generation/`](/duabusiness/src/DUA.Backend/acls/document-intake-to-dua-generation)
+- [`duabusiness/src/DUA.Backend/acls/template-management-to-dua-generation/`](/duabusiness/src/DUA.Backend/acls/template-management-to-dua-generation)
+- [`duabusiness/src/DUA.Backend/acls/dua-generation-to-review-confirmation/`](/duabusiness/src/DUA.Backend/acls/dua-generation-to-review-confirmation)
+- [`duabusiness/src/DUA.Backend/acls/review-confirmation-to-distribution/`](/duabusiness/src/DUA.Backend/acls/review-confirmation-to-distribution)
 
 ### CI/CD and IaC source folders
 - GitHub Actions workflows: [`.github/workflows/`](/.github/workflows)
@@ -2200,9 +2260,134 @@ With the most recent official SLA (April 8, 2026) for your stack:
 - Solution compiles successfully with empty/stub implementations.
 - OpenAPI document is generated for all planned endpoints.
 - Dependency injection registrations resolve at startup.
-- Project boundaries respect layered architecture (`API -> Application -> Domain`, `Infrastructure` as adapters).
+- Each domain contains `controllers`, `models`, `repositories`, and `services`.
+- Cross-domain dependencies are only implemented through the `acls` folder.
+
+### Backend Design Patterns
+
+| Pattern | Why it is needed | Where to apply |
+|---|---|---|
+| Facade (ACL Facade) | Exposes one stable contract per cross-domain integration and hides translation complexity. | `acls/<source>-to-<target>/` with one entry facade per integration flow. |
+| Adapter (ACL Translator) | Converts upstream models/events into downstream ubiquitous language without leaking domain internals. | Inside each ACL module as request/event translators. |
+| Singleton | Reuses expensive infrastructure clients and avoids connection churn. | Blob, Service Bus, Notification Hub, and Redis client factories in shared infra bootstrap. |
+| Repository | Keeps persistence access behind domain-owned contracts. | `domains/<domain>/repositories/` for aggregate retrieval and persistence. |
+| Unit of Work | Enforces transactional consistency for multi-entity updates in one domain command. | Domain service/application command boundary for SQL-backed writes. |
+| Strategy | Swaps processing logic by file type/rule profile without `if/else` explosion. | Document parsing/extraction/validation behavior in `domains/dua-generation/services/`. |
+| Factory Method / Abstract Factory | Centralizes creation of parser/validator/renderer strategies. | Generation domain service composition root. |
+| Template Method | Standardizes invariant pipeline steps (`parse -> extract -> map -> validate -> render`) while allowing step specialization. | Base generation workflow service. |
+| Specification | Encodes business rules/invariants as reusable predicates and query filters. | Validation rules for templates, generation preconditions, approval checks. |
+| Domain Event | Decouples domain actions from side effects and downstream processing. | Emit events in domain services; consume via ACL/event handlers. |
+| Outbox | Guarantees reliable event publication with SQL transaction consistency. | Between Azure SQL commits and Service Bus publishing. |
+| Saga / Process Manager | Coordinates long-running workflow state across contexts and compensations on failure. | `dua-generation` orchestration lifecycle and retries/compensations. |
+| CQRS (lightweight) | Optimizes read-heavy screens without overloading write model. | Progress/history/read endpoints with projection tables/views. |
+| Decorator | Adds logging, retry, metrics, caching around services without polluting business code. | Around repository/services and external provider clients. |
+| Idempotency Key | Prevents duplicate command execution from retries/client resubmits. | Upload initiation, generation start, approval commands. |
+
+### Pattern usage rules
+
+- Do not call another domain directly from `domains/*`; always go through `acls/*` facades.
+- Keep domain models free of infrastructure concerns; infra-specific code stays in repository/adapters/decorators.
+- Emit domain events inside the transaction boundary and publish through Outbox after commit.
+- Use Saga only for multi-step long-running workflows; avoid it for single-transaction operations.
+- Prefer Strategy + Factory for variable business behavior (format/profile-driven logic).
+
+### Suggested starter classes (scaffold-only)
+
+| Pattern | Suggested class/interface |
+|---|---|
+| ACL Facade | `DocumentIntakeToDuaGenerationFacade` |
+| ACL Adapter | `DocumentBatchToGenerationRequestAdapter` |
+| Repository | `IGenerationJobRepository`, `IDocumentBatchRepository` |
+| Unit of Work | `IUnitOfWork` |
+| Strategy | `IDocumentProcessorStrategy`, `IPolicyValidationStrategy` |
+| Factory | `DocumentProcessorStrategyFactory` |
+| Template Method | `BaseGenerationPipeline` |
+| Specification | `TemplateIsValidSpecification`, `GenerationPreconditionsSpecification` |
+| Domain Event | `DuaGenerationQueuedEvent`, `DuaApprovedEvent` |
+| Outbox | `OutboxMessage`, `IOutboxPublisher` |
+| Saga | `GenerationSagaManager` |
+| CQRS | `GenerationProgressReadModel`, `GenerationHistoryReadModel` |
+
+## Domain-Driven Design (DDD) domain definition
+
+### Domain classification
+| Domain | Classification | Why |
+|---|---|---|
+| DUA Generation and Validation | Core Domain | This is the business differentiator: transform heterogeneous trade documents into a valid DUA output. |
+| Document Intake | Supporting Domain | Enables ingestion, validation, and lifecycle of source files used by the core domain. |
+| Template Management | Supporting Domain | Governs DUA template versions, placeholder contracts, and compatibility rules. |
+| Review and Confirmation | Supporting Domain | Controls operator/reviewer decision flow before final document release. |
+| Distribution and Download | Supporting Domain | Provides secure preview/download and approved artifact delivery. |
+| Retention and Archival | Supporting Domain | Applies legal/compliance retention lifecycle and archive traceability. |
+| Identity and Access | Generic Domain | Standard authn/authz capabilities reused by all contexts. |
+| Audit and Observability | Generic Domain | Cross-cutting event traceability, telemetry, and operational diagnostics. |
+
+### Bounded contexts
+| Bounded Context | Main Responsibilities | Aggregate Root(s) | Primary Data Store |
+|---|---|---|---|
+| IdentityAccess | Login, OTP validation, JWT issuance, role/permission checks | `UserSession`, `AccessPolicy` | Azure SQL |
+| DocumentIntake | File registration, upload status, checksum, blob linkage, file eligibility | `DocumentBatch`, `SourceDocument` | Azure SQL + Blob |
+| TemplateManagement | Template upload, versioning, compatibility and placeholder validation | `DuaTemplate` | Azure SQL + Blob |
+| DuaGeneration | Orchestration of parse -> extract -> map -> validate -> render pipeline | `GenerationJob`, `DuaDraft` | Azure SQL + Blob |
+| ReviewConfirmation | Human review workflow, approve/reject decisions, reviewer notes | `ReviewCase`, `ApprovalDecision` | Azure SQL |
+| Distribution | Preview/download access, secure artifact retrieval | `GeneratedArtifact` | Azure SQL + Blob |
+| RetentionArchival | 90-day lifecycle transition, archive movement, retrieval metadata | `RetentionRecord` | Azure SQL + Blob Archive tier |
+| AuditObservability | Domain event log, trace correlation, operational metrics | `AuditEntry` | Azure SQL + App Insights |
+
+### Aggregate invariants (must always hold)
+| Context | Invariant |
+|---|---|
+| DocumentIntake | A `SourceDocument` cannot be `completed` without blob reference + checksum. |
+| TemplateManagement | Only one `DuaTemplate` version can be `active` per template channel/profile. |
+| DuaGeneration | A `GenerationJob` can start only when required files and one valid template exist. |
+| DuaGeneration | Status transitions are monotonic (`queued -> running -> completed/failed/cancelled`). |
+| ReviewConfirmation | Only `completed` generation outputs can be approved/rejected. |
+| Distribution | Download is allowed only for authorized users and valid artifact state. |
+| RetentionArchival | Archived artifacts must preserve immutable audit linkage to source generation. |
+
+### Domain events and consumers
+| Event | Produced by | Consumed by |
+|---|---|---|
+| `FilesUploadStarted` / `FilesUploadCompleted` / `FilesUploadRejected` | DocumentIntake | DuaGeneration, AuditObservability |
+| `DuaTemplateValidated` / `DuaTemplateRejected` | TemplateManagement | DuaGeneration, AuditObservability |
+| `DuaGenerationQueued` / `DuaGenerationStarted` | DuaGeneration | AuditObservability |
+| `DuaGenerationCompleted` / `DuaGenerationFailed` | DuaGeneration | ReviewConfirmation, Distribution, AuditObservability |
+| `DuaApproved` / `DuaRejected` | ReviewConfirmation | Distribution, AuditObservability |
+| `ArtifactDownloaded` | Distribution | AuditObservability |
+| `RecordsArchived` | RetentionArchival | AuditObservability |
+
+### Context map (integration style)
+| Upstream Context | Downstream Context | Integration Pattern |
+|---|---|---|
+| IdentityAccess | All contexts | JWT claims and permission policy enforcement |
+| DocumentIntake | DuaGeneration | ACL-mediated contract + published events |
+| TemplateManagement | DuaGeneration | ACL-mediated compatibility contract + events |
+| DuaGeneration | ReviewConfirmation | ACL-mediated event contract (`DuaGenerationCompleted`) |
+| ReviewConfirmation | Distribution | ACL-mediated event contract (`DuaApproved`) |
+| Distribution | RetentionArchival | ACL-mediated lifecycle status feed |
+| All contexts | AuditObservability | ACL/event publisher with correlation ID propagation |
+
+### Ubiquitous language (project terms)
+| Term | Definition |
+|---|---|
+| `GenerationSession` | Business session that groups selected files, template, and user intent. |
+| `DocumentBatch` | Set of uploaded source documents associated to one session. |
+| `DuaTemplate` | Versioned template artifact and validation contract for output rendering. |
+| `GenerationJob` | Async execution unit that processes one session into a DUA result. |
+| `DuaDraft` | Generated but not yet approved DUA output. |
+| `ApprovalDecision` | Reviewer decision that finalizes acceptance or rejection of a draft. |
+| `GeneratedArtifact` | Previewable/downloadable document produced by generation. |
+| `RetentionRecord` | Lifecycle metadata controlling hot-to-archive transitions. |
+
+### Mapping to backend folders (`duabusiness/src/DUA.Backend`)
+| Folder | DDD role |
+|---|---|
+| `domains/<domain-name>/models` | Aggregates, entities, value objects, domain events, invariants |
+| `domains/<domain-name>/services` | Domain behaviors and use-case orchestration inside the domain boundary |
+| `domains/<domain-name>/repositories` | Persistence contracts/implementations owned by the domain |
+| `domains/<domain-name>/controllers` | HTTP endpoints for the domain module |
+| `acls/<source>-to-<target>` | Anti-Corruption Layer for all cross-domain translations and calls |
+| `shared` | Shared kernel primitives used by multiple domains |
 
 
 # 3. Data Design
-
-
