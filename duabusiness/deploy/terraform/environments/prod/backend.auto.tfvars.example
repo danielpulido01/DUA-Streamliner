@@ -1,0 +1,3 @@
+project_name     = "dua-streamliner"
+environment_name = "prod"
+location         = "eastus"

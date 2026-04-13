@@ -1,0 +1,65 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "DUA Backend API",
+    "version": "0.1.0",
+    "description": "Scaffold-only contract aligned with the README bounded contexts and ACL policy."
+  },
+  "paths": {
+    "/api/auth/login": {
+      "post": {
+        "summary": "Authenticate a user with username, password, and OTP."
+      }
+    },
+    "/api/files/upload": {
+      "post": {
+        "summary": "Register an upload batch for DUA source documents."
+      }
+    },
+    "/api/templates": {
+      "post": {
+        "summary": "Register a DUA template."
+      }
+    },
+    "/api/generation": {
+      "post": {
+        "summary": "Queue a DUA generation job."
+      }
+    },
+    "/api/generation/{generationJobId}": {
+      "get": {
+        "summary": "Read generation progress."
+      }
+    },
+    "/api/generation/{generationJobId}/errors": {
+      "get": {
+        "summary": "Read generation warnings and errors."
+      }
+    },
+    "/api/reviews/{reviewCaseId}/confirm": {
+      "post": {
+        "summary": "Approve a generated DUA."
+      }
+    },
+    "/api/dua/{generationJobId}/preview": {
+      "get": {
+        "summary": "Preview a generated DUA artifact."
+      }
+    },
+    "/api/dua/{artifactId}/download": {
+      "get": {
+        "summary": "Download an approved DUA artifact."
+      }
+    },
+    "/api/retention/archive": {
+      "post": {
+        "summary": "Schedule archival for retention candidates."
+      }
+    },
+    "/api/activity": {
+      "get": {
+        "summary": "Read audit and activity entries."
+      }
+    }
+  }
+}
